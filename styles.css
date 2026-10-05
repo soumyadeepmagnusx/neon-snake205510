@@ -1,11 +1,12 @@
-/* NEONSNAKE 2077 - Cyberpunk Synthwave Stylesheet */
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap');
+/* NEONSNAKE 2077 - Killer Brutalist Synthwave Stylesheet */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700;900&display=swap');
 
 :root {
     --bg-dark: #070814;
-    --bg-card: rgba(14, 18, 36, 0.88);
+    --bg-card: rgba(14, 18, 36, 0.92);
     --neon-cyan: #00f0ff;
     --neon-magenta: #ff007f;
+    --neon-red: #ff0055;
     --neon-lime: #39ff14;
     --neon-gold: #ffe600;
     --neon-purple: #b026ff;
@@ -16,27 +17,30 @@
 /* Theme variations */
 body.theme-outrun {
     --bg-dark: #120317;
-    --bg-card: rgba(30, 8, 40, 0.88);
+    --bg-card: rgba(30, 8, 40, 0.92);
     --neon-cyan: #ff5e36;
     --neon-magenta: #e000ff;
+    --neon-red: #ff00aa;
     --neon-border: rgba(255, 0, 170, 0.4);
     --text-glow: 0 0 10px rgba(255, 94, 54, 0.7);
 }
 
 body.theme-matrix {
     --bg-dark: #030c04;
-    --bg-card: rgba(6, 26, 8, 0.9);
+    --bg-card: rgba(6, 26, 8, 0.92);
     --neon-cyan: #39ff14;
     --neon-magenta: #00ff66;
+    --neon-red: #2bff00;
     --neon-border: rgba(57, 255, 20, 0.4);
     --text-glow: 0 0 10px rgba(57, 255, 20, 0.7);
 }
 
 body.theme-cyberpunk {
     --bg-dark: #0b0c10;
-    --bg-card: rgba(22, 23, 30, 0.9);
+    --bg-card: rgba(22, 23, 30, 0.92);
     --neon-cyan: #ffe600;
     --neon-magenta: #00f0ff;
+    --neon-red: #ff0055;
     --neon-border: rgba(255, 230, 0, 0.4);
     --text-glow: 0 0 10px rgba(255, 230, 0, 0.7);
 }
@@ -60,6 +64,7 @@ body {
     justify-content: flex-start;
     overflow-x: hidden;
     position: relative;
+    padding: 14px 10px;
     transition: background-color 0.3s ease;
 }
 
@@ -84,11 +89,10 @@ body {
     left: 50%;
     transform: translateX(-50%);
     background: rgba(10, 15, 30, 0.95);
-    border: 1px solid var(--neon-gold);
-    box-shadow: 0 0 20px rgba(255, 230, 0, 0.4);
+    border: 2px solid var(--neon-gold);
+    box-shadow: 6px 6px 0px #ff0055, 0 0 20px rgba(255, 230, 0, 0.4);
     color: #fff;
-    padding: 10px 20px;
-    border-radius: 4px;
+    padding: 10px 22px;
     font-family: 'Orbitron', monospace;
     font-size: 12px;
     z-index: 10000;
@@ -101,110 +105,143 @@ body {
     top: 20px;
 }
 
-/* App Header */
-header {
+/* ===================================================
+   KILLER NEONSNAKE LAYOUT FRAME (BRUTALIST ARCADE DECK)
+   =================================================== */
+
+.game-wrapper {
     width: 100%;
-    max-width: 900px;
-    padding: 12px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--neon-border);
-    background: linear-gradient(180deg, rgba(0, 240, 255, 0.08) 0%, transparent 100%);
-}
-
-.logo {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-}
-
-.logo h1 {
-    font-family: 'Orbitron', monospace;
-    font-size: 24px;
-    font-weight: 900;
-    letter-spacing: 2px;
-    color: #fff;
-    text-shadow: 0 0 12px var(--neon-cyan), 0 0 24px var(--neon-cyan);
-}
-
-.logo .year {
-    color: var(--neon-magenta);
-    font-family: 'Orbitron', monospace;
-    font-size: 15px;
-    font-weight: 700;
-    text-shadow: 0 0 8px var(--neon-magenta);
-}
-
-.header-actions {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-/* Cyber Buttons */
-.cyber-btn {
-    font-family: 'Orbitron', monospace;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 7px 12px;
-    background: rgba(0, 240, 255, 0.08);
-    border: 1px solid var(--neon-cyan);
-    color: var(--neon-cyan);
-    cursor: pointer;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    transition: all 0.2s ease;
-    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
-}
-
-.cyber-btn:hover {
-    background: var(--neon-cyan);
-    color: #070814;
-    box-shadow: 0 0 16px var(--neon-cyan);
-    transform: translateY(-1px);
-}
-
-.cyber-btn.active {
-    background: var(--neon-cyan);
-    color: #070814;
-    box-shadow: 0 0 14px var(--neon-cyan);
-}
-
-.cyber-btn.magenta {
-    border-color: var(--neon-magenta);
-    color: var(--neon-magenta);
-    background: rgba(255, 0, 127, 0.1);
-}
-
-.cyber-btn.magenta:hover, .cyber-btn.magenta.active {
-    background: var(--neon-magenta);
-    color: #fff;
-    box-shadow: 0 0 16px var(--neon-magenta);
-}
-
-/* Game Container */
-.game-container {
-    width: 100%;
-    max-width: 900px;
-    padding: 10px 16px;
+    max-width: 860px;
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 14px;
+}
+
+/* Brutal Header */
+.brutal-header {
+    width: 100%;
+    background: #000;
+    border: 3px solid #ff0055;
+    box-shadow: 6px 6px 0px #00f0ff, 0 0 20px rgba(255, 0, 85, 0.3);
+    padding: 12px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 12px;
 }
 
-/* HUD Panel */
+.header-brand {
+    display: flex;
+    flex-direction: column;
+}
+
+.cyber-subtag {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: #a0aec0;
+    margin-top: 2px;
+}
+
+/* Cyberpunk Glitch Typography */
+.glitch-text {
+    position: relative;
+    font-family: 'Orbitron', monospace;
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: #fff;
+    text-shadow: 2px 2px 0px #ff0055, -2px -2px 0px #00f0ff;
+    display: inline-block;
+}
+
+.glitch-text::before,
+.glitch-text::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    clip: rect(0, 0, 0, 0);
+}
+
+.glitch-text::before {
+    left: -2px;
+    text-shadow: 2px 0 #ff0055;
+    animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
+}
+
+.glitch-text::after {
+    left: 2px;
+    text-shadow: -2px 0 #00f0ff;
+    animation: glitch-anim-2 3.2s infinite linear alternate-reverse;
+}
+
+@keyframes glitch-anim-1 {
+    0% { clip: rect(15px, 9999px, 35px, 0); transform: skew(0.3deg); }
+    20% { clip: rect(55px, 9999px, 75px, 0); transform: skew(0.8deg); }
+    40% { clip: rect(5px, 9999px, 25px, 0); transform: skew(0.1deg); }
+    60% { clip: rect(45px, 9999px, 68px, 0); transform: skew(0.5deg); }
+    80% { clip: rect(12px, 9999px, 30px, 0); transform: skew(0.2deg); }
+    100% { clip: rect(38px, 9999px, 58px, 0); transform: skew(0.6deg); }
+}
+
+@keyframes glitch-anim-2 {
+    0% { clip: rect(30px, 9999px, 50px, 0); transform: skew(0.4deg); }
+    25% { clip: rect(8px, 9999px, 24px, 0); transform: skew(0.2deg); }
+    50% { clip: rect(65px, 9999px, 85px, 0); transform: skew(0.7deg); }
+    75% { clip: rect(22px, 9999px, 42px, 0); transform: skew(0.3deg); }
+    100% { clip: rect(2px, 9999px, 18px, 0); transform: skew(0.5deg); }
+}
+
+/* Header Deck Tool Buttons */
+.header-deck-tools {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Brutalist Score Container */
+.score-container {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    background: #000;
+    border: 2px solid #ff0055;
+    box-shadow: 4px 4px 0px #ff0055;
+    padding: 6px 14px;
+}
+
+.score-container .label {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    color: #ff0055;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.neon-number {
+    font-family: 'Orbitron', monospace;
+    font-size: 24px;
+    font-weight: 900;
+    color: #00f0ff;
+    text-shadow: 0 0 10px #00f0ff, 0 0 20px #00f0ff;
+    letter-spacing: 3px;
+}
+
+/* Secondary HUD Telemetry Bar */
 .hud-bar {
     width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: var(--bg-card);
-    border: 1px solid var(--neon-border);
+    background: #000;
+    border: 2px solid var(--neon-border);
+    box-shadow: 4px 4px 0px rgba(0, 240, 255, 0.4);
     padding: 8px 16px;
-    border-radius: 4px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .hud-stat {
@@ -213,15 +250,16 @@ header {
 }
 
 .hud-label {
-    font-size: 11px;
+    font-size: 10px;
     letter-spacing: 1px;
     color: #718096;
     text-transform: uppercase;
+    font-family: 'Orbitron', monospace;
 }
 
 .hud-value {
     font-family: 'Orbitron', monospace;
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 700;
     color: #fff;
 }
@@ -241,20 +279,19 @@ header {
     text-shadow: 0 0 8px var(--neon-magenta);
 }
 
-/* Boost Gauge */
+/* Boost / Ammo Gauge */
 .boost-container {
     display: flex;
     flex-direction: column;
-    width: 130px;
+    width: 160px;
 }
 
 .boost-bar-bg {
     width: 100%;
     height: 10px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(0, 240, 255, 0.4);
+    background: #111;
+    border: 1px solid var(--neon-cyan);
     margin-top: 4px;
-    border-radius: 2px;
     overflow: hidden;
 }
 
@@ -271,15 +308,25 @@ header {
     box-shadow: 0 0 8px #ff0055;
 }
 
-/* Canvas Viewport */
-.canvas-wrapper {
+/* ===================================================
+   ARCADE DECK & HARD RED RETRO SHADOW CANVAS BORDER
+   =================================================== */
+
+.arcade-deck {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.canvas-border {
     position: relative;
     width: 100%;
     max-width: 720px;
     aspect-ratio: 1 / 1;
-    border: 1px solid var(--neon-border);
-    box-shadow: 0 0 30px rgba(0, 240, 255, 0.15), inset 0 0 20px rgba(0, 0, 0, 0.8);
     background: #060713;
+    border: 3px solid #ff0055;
+    /* Hard Red Retro Shadow */
+    box-shadow: 10px 10px 0px #ff0055, 0 0 25px rgba(255, 0, 85, 0.45);
     overflow: hidden;
 }
 
@@ -287,6 +334,87 @@ canvas {
     width: 100%;
     height: 100%;
     display: block;
+}
+
+/* ===================================================
+   BRUTAL CONTROLS & KILL SWITCH BUTTON
+   =================================================== */
+
+.brutal-controls {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 6px;
+}
+
+.btn-kill-switch {
+    font-family: 'Orbitron', monospace;
+    font-size: 15px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: #fff;
+    background: #ff0055;
+    border: 2px solid #fff;
+    padding: 14px 28px;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 6px 6px 0px #00f0ff, 0 0 15px rgba(255, 0, 85, 0.5);
+    transition: all 0.15s ease;
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+
+.btn-kill-switch:hover {
+    background: #00f0ff;
+    color: #000;
+    border-color: #ff0055;
+    box-shadow: 8px 8px 0px #ff0055, 0 0 20px rgba(0, 240, 255, 0.8);
+    transform: translate(-2px, -2px);
+}
+
+.btn-kill-switch:active {
+    transform: translate(3px, 3px);
+    box-shadow: 2px 2px 0px #00f0ff;
+}
+
+/* Cyber Tool Buttons */
+.cyber-btn {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 7px 12px;
+    background: #000;
+    border: 1px solid var(--neon-cyan);
+    color: var(--neon-cyan);
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 3px 3px 0px var(--neon-cyan);
+    transition: all 0.15s ease;
+}
+
+.cyber-btn:hover {
+    background: var(--neon-cyan);
+    color: #070814;
+    box-shadow: 4px 4px 0px #ff0055;
+    transform: translate(-1px, -1px);
+}
+
+.cyber-btn.active {
+    background: var(--neon-cyan);
+    color: #070814;
+    box-shadow: 3px 3px 0px #fff;
+}
+
+.cyber-btn.magenta {
+    border-color: var(--neon-magenta);
+    color: var(--neon-magenta);
+    box-shadow: 3px 3px 0px var(--neon-magenta);
+}
+
+.cyber-btn.magenta:hover, .cyber-btn.magenta.active {
+    background: var(--neon-magenta);
+    color: #fff;
+    box-shadow: 4px 4px 0px #00f0ff;
 }
 
 /* Active Powerup Badges */
@@ -299,10 +427,16 @@ canvas {
     font-size: 10px;
     font-weight: 700;
     padding: 3px 6px;
-    border-radius: 2px;
     font-family: 'Orbitron', monospace;
     text-transform: uppercase;
     animation: badgePulse 1s infinite alternate;
+}
+
+.badge.ammo {
+    background: #000;
+    border: 1px solid var(--neon-cyan);
+    color: var(--neon-cyan);
+    box-shadow: 2px 2px 0px var(--neon-cyan);
 }
 
 .badge.phase {
@@ -323,12 +457,6 @@ canvas {
     color: var(--neon-gold);
 }
 
-.badge.ammo {
-    background: rgba(0, 240, 255, 0.25);
-    border: 1px solid var(--neon-cyan);
-    color: #fff;
-}
-
 @keyframes badgePulse {
     from { opacity: 0.7; }
     to { opacity: 1; }
@@ -341,7 +469,7 @@ canvas {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(7, 8, 20, 0.88);
+    background: rgba(7, 8, 20, 0.9);
     backdrop-filter: blur(6px);
     display: flex;
     flex-direction: column;
@@ -353,12 +481,11 @@ canvas {
 }
 
 .modal-card {
-    background: var(--bg-card);
-    border: 1px solid var(--neon-border);
-    padding: 24px 32px;
-    border-radius: 6px;
-    box-shadow: 0 0 35px rgba(0, 240, 255, 0.25);
-    max-width: 480px;
+    background: #000;
+    border: 3px solid #ff0055;
+    box-shadow: 8px 8px 0px #00f0ff, 0 0 35px rgba(255, 0, 85, 0.35);
+    padding: 24px 28px;
+    max-width: 500px;
     width: 100%;
 }
 
@@ -372,7 +499,7 @@ canvas {
 }
 
 .modal-subtitle {
-    font-size: 14px;
+    font-size: 13px;
     color: #a0aec0;
     margin-bottom: 16px;
     line-height: 1.4;
@@ -381,7 +508,7 @@ canvas {
 /* Mode Selector Grid */
 .mode-selector {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 8px;
     margin-bottom: 14px;
 }
@@ -410,13 +537,13 @@ canvas {
 }
 
 .cyber-select {
-    background: rgba(14, 18, 36, 0.9);
+    background: #000;
     border: 1px solid var(--neon-cyan);
     color: #fff;
     padding: 6px 10px;
     font-family: 'Orbitron', monospace;
     font-size: 11px;
-    border-radius: 2px;
+    box-shadow: 2px 2px 0px var(--neon-cyan);
     outline: none;
     cursor: pointer;
 }
@@ -431,9 +558,9 @@ canvas {
     display: none;
     margin-top: 10px;
     padding: 12px;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(0, 240, 255, 0.2);
-    border-radius: 4px;
+    background: #080808;
+    border: 2px solid rgba(0, 240, 255, 0.4);
+    box-shadow: 4px 4px 0px #00f0ff;
 }
 
 .p2p-inputs {
@@ -444,15 +571,15 @@ canvas {
 
 .cyber-input {
     width: 100%;
-    background: rgba(14, 18, 36, 0.9);
-    border: 1px solid var(--neon-cyan);
+    background: #000;
+    border: 2px solid var(--neon-cyan);
+    box-shadow: 2px 2px 0px var(--neon-cyan);
     color: #fff;
     padding: 8px;
     font-family: 'Orbitron', monospace;
     font-size: 13px;
     text-transform: uppercase;
     text-align: center;
-    border-radius: 2px;
 }
 
 .p2p-status {
@@ -475,6 +602,7 @@ canvas {
     display: flex;
     justify-content: center;
     gap: 16px;
+    flex-wrap: wrap;
 }
 
 .key-tag {
@@ -482,7 +610,6 @@ canvas {
     padding: 2px 6px;
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 3px;
     color: #fff;
     font-family: monospace;
 }
@@ -502,9 +629,10 @@ canvas {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(255, 255, 255, 0.05);
+    background: #111;
     padding: 8px 14px;
     border-left: 3px solid var(--neon-cyan);
+    border-bottom: 1px solid #222;
     font-family: 'Orbitron', monospace;
     font-size: 13px;
 }
@@ -536,8 +664,8 @@ canvas {
 
 .d-pad {
     display: grid;
-    grid-template-columns: repeat(3, 50px);
-    grid-template-rows: repeat(3, 50px);
+    grid-template-columns: repeat(3, 48px);
+    grid-template-rows: repeat(3, 48px);
     gap: 4px;
 }
 
@@ -561,9 +689,8 @@ canvas {
 }
 
 .touch-btn {
-    width: 68px;
-    height: 68px;
-    border-radius: 50%;
+    width: 66px;
+    height: 66px;
     font-family: 'Orbitron', monospace;
     font-weight: 900;
     font-size: 11px;
@@ -577,23 +704,25 @@ canvas {
 }
 
 .touch-btn.fire-btn {
-    border: 2px solid #ff0055;
-    background: rgba(255, 0, 85, 0.25);
-    box-shadow: 0 0 14px #ff0055;
+    border: 2px solid #fff;
+    background: #ff0055;
+    box-shadow: 4px 4px 0px #00f0ff, 0 0 14px #ff0055;
 }
 
 .touch-btn.fire-btn:active {
-    background: #ff0055;
+    background: #00f0ff;
+    color: #000;
 }
 
 .touch-btn.boost-btn {
-    border: 2px solid var(--neon-magenta);
-    background: rgba(255, 0, 127, 0.25);
-    box-shadow: 0 0 14px var(--neon-magenta);
+    border: 2px solid #fff;
+    background: var(--neon-magenta);
+    box-shadow: 4px 4px 0px #00f0ff, 0 0 14px var(--neon-magenta);
 }
 
 .touch-btn.boost-btn:active {
-    background: var(--neon-magenta);
+    background: #00f0ff;
+    color: #000;
 }
 
 @media (max-width: 768px) {
@@ -604,6 +733,15 @@ canvas {
         padding: 6px 10px;
     }
     .hud-value {
-        font-size: 15px;
+        font-size: 14px;
+    }
+    .glitch-text {
+        font-size: 20px;
+    }
+    .brutal-header {
+        padding: 10px 12px;
+    }
+    .canvas-border {
+        box-shadow: 6px 6px 0px #ff0055, 0 0 18px rgba(255, 0, 85, 0.4);
     }
 }

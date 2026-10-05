@@ -3,7 +3,7 @@
 
 class NeonSnakeGame {
     constructor() {
-        this.canvas = document.getElementById('gameCanvas');
+        this.canvas = document.getElementById('snakeCanvas') || document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
 
         // Grid settings
@@ -1396,9 +1396,18 @@ class NeonSnakeGame {
     }
 
     updateHUD() {
-        document.getElementById('scoreDisplay').innerText = this.score;
-        document.getElementById('highScoreDisplay').innerText = this.highScore;
-        document.getElementById('comboDisplay').innerText = `x${this.combo}`;
+        const scoreVal = document.getElementById('score-val');
+        if (scoreVal) {
+            scoreVal.innerText = this.score.toString().padStart(4, '0');
+        }
+        const scoreDisp = document.getElementById('scoreDisplay');
+        if (scoreDisp) scoreDisp.innerText = this.score;
+
+        const highScoreDisp = document.getElementById('highScoreDisplay');
+        if (highScoreDisp) highScoreDisp.innerText = this.highScore;
+
+        const comboDisp = document.getElementById('comboDisplay');
+        if (comboDisp) comboDisp.innerText = `x${this.combo}`;
 
         if (this.player1) {
             const boostBar = document.getElementById('boostFill');
@@ -1452,5 +1461,14 @@ class NeonSnakeGame {
 
 window.addEventListener('DOMContentLoaded', () => {
     window.game = new NeonSnakeGame();
+    window.startGame = function() {
+        if (window.game) {
+            if (window.cyberAudio) {
+                window.cyberAudio.playClick();
+                window.cyberAudio.startMusic();
+            }
+            window.game.startGame();
+        }
+    };
     requestAnimationFrame((t) => window.game.loop(t));
 });
