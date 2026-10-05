@@ -44,9 +44,44 @@ class CyberSnake {
         this.bossHealth = 100;
         this.maxBossHealth = 100;
 
+        // Tactical Secondary: Deployable Proximity Cyber Mines & Wormholes
+        this.mines = 3;
+        this.maxMines = 3;
+        this.mineCooldown = 0;
+        this.portalCooldown = 0;
+
+        // Cyber Forge Cosmetics & Tactical Mechanics
+        this.headModel = 'apex'; // 'apex', 'mecha', 'skull', 'lightcycle'
+        this.trailStyle = 'ribbon'; // 'ribbon', 'matrix', 'plasma', 'hyperwave'
+        this.isDrifting = false;
+
         // Movement Timing
         this.baseMoveInterval = 0.11; // base seconds per grid step
         this.moveTimer = 0;
+    }
+
+    setDrifting(drifting) {
+        this.isDrifting = drifting;
+    }
+
+    deployMine() {
+        if (this.mines <= 0 || this.mineCooldown > 0 || !this.isAlive || this.body.length === 0) return null;
+        this.mines--;
+        this.mineCooldown = 0.8;
+        if (window.cyberAudio) window.cyberAudio.playMineArm();
+
+        const tail = this.body[this.body.length - 1];
+        return {
+            gridX: tail.x,
+            gridY: tail.y,
+            pixelX: tail.pixelX,
+            pixelY: tail.pixelY,
+            owner: this,
+            armTimer: 0.6,
+            isArmed: false,
+            life: 25,
+            radius: 14
+        };
     }
 
     shootPlasma() {
@@ -119,11 +154,22 @@ class CyberSnake {
 
         // Weapon & Ammo Cooldown
         if (this.ammoCooldown > 0) this.ammoCooldown -= dt;
+        if (this.mineCooldown > 0) this.mineCooldown -= dt;
+        if (this.portalCooldown > 0) this.portalCooldown -= dt;
+
         if (this.ammo < this.maxAmmo) {
             this.ammoRechargeTimer = (this.ammoRechargeTimer || 0) + dt;
             if (this.ammoRechargeTimer >= 2.2) {
                 this.ammoRechargeTimer = 0;
                 this.ammo = Math.min(this.maxAmmo, this.ammo + 1);
+            }
+        }
+
+        if (this.mines < this.maxMines) {
+            this.mineRechargeTimer = (this.mineRechargeTimer || 0) + dt;
+            if (this.mineRechargeTimer >= 5.0) {
+                this.mineRechargeTimer = 0;
+                this.mines = Math.min(this.maxMines, this.mines + 1);
             }
         }
 
@@ -141,6 +187,7 @@ class CyberSnake {
         // Speed calculation
         let speedMultiplier = 1.0;
         if (this.isBoosting) speedMultiplier = 2.1;
+        if (this.isDrifting) speedMultiplier = 0.45; // Tactical Cyber Brake / Drift
         const currentInterval = this.baseMoveInterval / speedMultiplier;
 
         this.moveTimer += dt;
@@ -180,14 +227,31 @@ class CyberSnake {
                 this.growPending = false;
             }
 
-            // Spawn boost sparks
-            if (this.isBoosting && window.particleEngine) {
-                window.particleEngine.spawnTrailSparks(
-                    this.gridX * 20 + 10,
-                    this.gridY * 20 + 10,
-                    this.colorScheme.glow,
-                    3
-                );
+            // Particle Trail Emissions
+            if (window.particleEngine) {
+                if (this.isBoosting) {
+                    window.particleEngine.spawnTrailSparks(
+                        this.gridX * 20 + 10,
+                        this.gridY * 20 + 10,
+                        this.colorScheme.glow,
+                        3
+                    );
+                }
+                if (this.isDrifting) {
+                    window.particleEngine.spawnDriftSparks(
+                        this.gridX * 20 + 10,
+                        this.gridY * 20 + 10,
+                        this.dir,
+                        4
+                    );
+                }
+                if (this.trailStyle === 'matrix' && Math.random() < 0.5) {
+                    window.particleEngine.spawnBinaryMatrixTrail(
+                        this.gridX * 20 + 10,
+                        this.gridY * 20 + 10,
+                        this.colorScheme.primary
+                    );
+                }
             }
         }
 
@@ -237,13 +301,39 @@ class CyberSnake {
             for (let i = 1; i < this.body.length; i++) {
                 ctx.lineTo(this.body[i].pixelX, this.body[i].pixelY);
             }
-            ctx.lineWidth = this.isBoosting ? cellSize * 0.8 : cellSize * 0.6;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.strokeStyle = this.colorScheme.secondary;
-            ctx.shadowBlur = this.isBoosting ? 20 : 10;
-            ctx.shadowColor = this.colorScheme.glow;
-            ctx.stroke();
+            
+            const trail = this.trailStyle || 'ribbon';
+            if (trail === 'matrix') {
+                ctx.lineWidth = this.isBoosting ? cellSize * 0.75 : cellSize * 0.5;
+                ctx.strokeStyle = '#39ff14';
+                ctx.shadowBlur = 16;
+                ctx.shadowColor = '#39ff14';
+                ctx.setLineDash([8, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            } else if (trail === 'plasma') {
+                ctx.lineWidth = this.isBoosting ? cellSize * 0.9 : cellSize * 0.65;
+                const hue = (Date.now() * 0.1) % 360;
+                ctx.strokeStyle = `hsl(${hue}, 100%, 65%)`;
+                ctx.shadowBlur = 22;
+                ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+                ctx.stroke();
+            } else if (trail === 'hyperwave') {
+                ctx.lineWidth = this.isBoosting ? cellSize * 0.85 : cellSize * 0.6;
+                ctx.strokeStyle = '#ff00aa';
+                ctx.shadowBlur = 18;
+                ctx.shadowColor = '#00f0ff';
+                ctx.stroke();
+            } else {
+                // Classic Cyber Ribbon
+                ctx.lineWidth = this.isBoosting ? cellSize * 0.8 : cellSize * 0.6;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = this.colorScheme.secondary;
+                ctx.shadowBlur = this.isBoosting ? 20 : 10;
+                ctx.shadowColor = this.colorScheme.glow;
+                ctx.stroke();
+            }
 
             // Inner bright core ribbon
             ctx.beginPath();
@@ -251,7 +341,7 @@ class CyberSnake {
             for (let i = 1; i < this.body.length; i++) {
                 ctx.lineTo(this.body[i].pixelX, this.body[i].pixelY);
             }
-            ctx.lineWidth = cellSize * 0.3;
+            ctx.lineWidth = cellSize * 0.28;
             ctx.strokeStyle = '#ffffff';
             ctx.shadowBlur = 4;
             ctx.shadowColor = '#ffffff';
@@ -273,29 +363,135 @@ class CyberSnake {
             ctx.shadowColor = this.colorScheme.glow;
 
             // Node body
-            ctx.beginPath();
             if (isHead) {
-                ctx.fillStyle = '#ffffff';
-                ctx.arc(0, 0, radius, 0, Math.PI * 2);
-                ctx.fill();
+                const angle = Math.atan2(this.dir.y, this.dir.x);
+                ctx.rotate(angle);
 
-                // Cyber visor / eye optics facing travel direction
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = '#ff0055';
-                ctx.fillStyle = '#ff0055';
-                const eyeAngle = Math.atan2(this.dir.y, this.dir.x);
-                const eyeDist = radius * 0.55;
-                const eyeSpread = 0.45;
+                const model = this.headModel || 'apex';
+                if (model === 'mecha') {
+                    // Armored Hexagonal Warhead
+                    ctx.fillStyle = '#e6f7ff';
+                    ctx.beginPath();
+                    for (let s = 0; s < 6; s++) {
+                        const a = (s * Math.PI) / 3;
+                        const px = Math.cos(a) * radius * 1.05;
+                        const py = Math.sin(a) * radius * 0.95;
+                        if (s === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.strokeStyle = this.colorScheme.primary;
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
 
-                const leftEyeX = Math.cos(eyeAngle - eyeSpread) * eyeDist;
-                const leftEyeY = Math.sin(eyeAngle - eyeSpread) * eyeDist;
-                const rightEyeX = Math.cos(eyeAngle + eyeSpread) * eyeDist;
-                const rightEyeY = Math.sin(eyeAngle + eyeSpread) * eyeDist;
+                    // Forward ram mandibles
+                    ctx.fillStyle = '#ff0055';
+                    ctx.beginPath();
+                    ctx.moveTo(radius * 0.7, -radius * 0.6);
+                    ctx.lineTo(radius * 1.4, -radius * 0.3);
+                    ctx.lineTo(radius * 0.7, 0);
+                    ctx.lineTo(radius * 1.4, radius * 0.3);
+                    ctx.lineTo(radius * 0.7, radius * 0.6);
+                    ctx.fill();
 
-                ctx.beginPath();
-                ctx.arc(leftEyeX, leftEyeY, 2.5, 0, Math.PI * 2);
-                ctx.arc(rightEyeX, rightEyeY, 2.5, 0, Math.PI * 2);
-                ctx.fill();
+                    // Central target sensor
+                    ctx.fillStyle = '#00f0ff';
+                    ctx.beginPath();
+                    ctx.arc(radius * 0.1, 0, 3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                } else if (model === 'skull') {
+                    // Cybernetic Skull
+                    ctx.fillStyle = '#f0f3f8';
+                    ctx.beginPath();
+                    ctx.arc(-radius * 0.1, 0, radius * 0.85, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillRect(radius * 0.1, -radius * 0.45, radius * 0.8, radius * 0.9);
+
+                    // Hollow eye sockets
+                    ctx.fillStyle = '#05070f';
+                    ctx.beginPath();
+                    ctx.arc(0, -radius * 0.3, 3.5, 0, Math.PI * 2);
+                    ctx.arc(0, radius * 0.3, 3.5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Red laser eye glare
+                    ctx.fillStyle = '#ff0055';
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = '#ff0055';
+                    ctx.beginPath();
+                    ctx.arc(0.5, -radius * 0.3, 1.8, 0, Math.PI * 2);
+                    ctx.arc(0.5, radius * 0.3, 1.8, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Grille lines
+                    ctx.strokeStyle = '#05070f';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(radius * 0.35, -radius * 0.35); ctx.lineTo(radius * 0.35, radius * 0.35);
+                    ctx.moveTo(radius * 0.6, -radius * 0.35); ctx.lineTo(radius * 0.6, radius * 0.35);
+                    ctx.stroke();
+
+                } else if (model === 'lightcycle') {
+                    // Streamlined Tron Lightcycle Canopy
+                    ctx.fillStyle = '#0f172a';
+                    ctx.beginPath();
+                    ctx.moveTo(radius * 1.25, 0);
+                    ctx.lineTo(radius * 0.3, -radius * 0.85);
+                    ctx.lineTo(-radius * 0.9, -radius * 0.7);
+                    ctx.lineTo(-radius * 0.9, radius * 0.7);
+                    ctx.lineTo(radius * 0.3, radius * 0.85);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Glowing wrap-around visor cockpit
+                    ctx.fillStyle = this.colorScheme.glow;
+                    ctx.shadowBlur = 16;
+                    ctx.shadowColor = this.colorScheme.glow;
+                    ctx.beginPath();
+                    ctx.ellipse(radius * 0.15, 0, radius * 0.6, radius * 0.45, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Side runner strips
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(-radius * 0.8, -radius * 0.6);
+                    ctx.lineTo(radius * 0.6, -radius * 0.4);
+                    ctx.moveTo(-radius * 0.8, radius * 0.6);
+                    ctx.lineTo(radius * 0.6, radius * 0.4);
+                    ctx.stroke();
+
+                } else {
+                    // 'apex': Aerodynamic Cyber Visor (Default)
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, radius * 1.1, radius * 0.85, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Sleek visor slit
+                    ctx.fillStyle = this.colorScheme.glow;
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = this.colorScheme.glow;
+                    ctx.fillRect(radius * 0.1, -radius * 0.5, radius * 0.35, radius);
+
+                    // Dual optic cores
+                    ctx.fillStyle = '#ff0055';
+                    ctx.beginPath();
+                    ctx.arc(radius * 0.35, -radius * 0.28, 2.5, 0, Math.PI * 2);
+                    ctx.arc(radius * 0.35, radius * 0.28, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Crest fin
+                    ctx.strokeStyle = this.colorScheme.primary;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(-radius * 0.8, 0);
+                    ctx.lineTo(radius * 0.2, 0);
+                    ctx.stroke();
+                }
+
             } else {
                 // Segment ring / node
                 ctx.fillStyle = this.colorScheme.primary;

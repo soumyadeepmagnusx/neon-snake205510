@@ -56,6 +56,14 @@ class Particle {
             const ringRadius = (1 - progress) * this.size * 3 + this.size;
             ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
             ctx.stroke();
+        } else if (this.shape === 'binary') {
+            ctx.font = `900 ${Math.max(9, currentSize * 2.2)}px monospace`;
+            ctx.textAlign = 'center';
+            ctx.fillText(Math.random() > 0.5 ? '1' : '0', 0, 0);
+        } else if (this.shape === 'flame') {
+            ctx.beginPath();
+            ctx.arc(0, 0, currentSize * 1.5, 0, Math.PI * 2);
+            ctx.fill();
         }
         ctx.restore();
     }
@@ -93,9 +101,40 @@ class FloatingText {
     }
 }
 
+class Shockwave {
+    constructor(x, y, color = '#00f0ff', maxRadius = 50, life = 0.5) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.maxRadius = maxRadius;
+        this.life = life;
+        this.maxLife = life;
+    }
+
+    update(dt) {
+        this.life -= dt;
+        return this.life > 0;
+    }
+
+    draw(ctx) {
+        const progress = 1 - Math.max(0, this.life / this.maxLife);
+        ctx.save();
+        ctx.strokeStyle = this.color;
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = this.color;
+        ctx.lineWidth = Math.max(1, (1 - progress) * 3);
+        ctx.globalAlpha = Math.max(0, 1 - progress);
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, progress * this.maxRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
 class ParticleEngine {
     constructor() {
         this.particles = [];
+        this.shockwaves = [];
         this.floatingTexts = [];
         this.ambientParticles = [];
         this.maxParticles = 600;
@@ -178,6 +217,73 @@ class ParticleEngine {
         }
     }
 
+    spawnBinaryMatrixTrail(x, y, color = '#39ff14') {
+        if (this.particles.length >= this.maxParticles) return;
+        this.particles.push(new Particle(
+            x + (Math.random() - 0.5) * 12,
+            y + (Math.random() - 0.5) * 12,
+            (Math.random() - 0.5) * 0.4,
+            Math.random() * 1.2 + 0.5,
+            color,
+            5,
+            0.5,
+            'binary'
+        ));
+    }
+
+    spawnDriftSparks(x, y, dir, count = 4) {
+        for (let i = 0; i < count; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const angle = Math.atan2(-dir.y, -dir.x) + (Math.random() - 0.5) * 1.5;
+            const vel = Math.random() * 4 + 2;
+            this.particles.push(new Particle(
+                x, y,
+                Math.cos(angle) * vel,
+                Math.sin(angle) * vel,
+                Math.random() > 0.5 ? '#ff0055' : '#ffe600',
+                Math.random() * 3 + 1.5,
+                0.35,
+                'spark'
+            ));
+        }
+    }
+
+    addDriftSparks(x, y, dir, count = 4) {
+        this.spawnDriftSparks(x, y, dir, count);
+    }
+
+    spawnExplosion(x, y, color = '#ff0055', count = 20, speed = 5) {
+        this.spawnBurst(x, y, color, count, speed);
+    }
+
+    spawnPortalWarp(x, y, color = '#00f0ff', count = 18) {
+        // Expanding and imploding quantum rings
+        for (let i = 0; i < count; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const angle = (Math.PI * 2 * i) / count;
+            const speed = Math.random() * 3 + 2;
+            this.particles.push(new Particle(
+                x, y,
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed,
+                color,
+                Math.random() * 3 + 2,
+                0.55,
+                'spark'
+            ));
+        }
+        // Quantum pulse wave
+        this.shockwaves.push(new Shockwave(x, y, color, 45, 0.45));
+    }
+
+    spawnMineExplosion(x, y) {
+        // High density explosive burst
+        this.spawnExplosion(x, y, '#ff0055', 28);
+        this.spawnExplosion(x, y, '#ffe600', 16);
+        this.shockwaves.push(new Shockwave(x, y, '#ff0055', 65, 0.5));
+        this.shockwaves.push(new Shockwave(x, y, '#ffffff', 40, 0.3));
+    }
+
     addText(text, x, y, color = '#00f0ff', fontSize = 16) {
         this.floatingTexts.push(new FloatingText(text, x, y, color, fontSize));
     }
@@ -185,6 +291,9 @@ class ParticleEngine {
     update(dt, width = 800, height = 800) {
         // Update particles
         this.particles = this.particles.filter(p => p.update(dt));
+
+        // Update shockwaves
+        this.shockwaves = this.shockwaves.filter(s => s.update(dt));
 
         // Update floating text
         this.floatingTexts = this.floatingTexts.filter(t => t.update(dt));
@@ -217,6 +326,11 @@ class ParticleEngine {
             this.particles[i].draw(ctx);
         }
 
+        // Active shockwaves
+        for (let i = 0; i < this.shockwaves.length; i++) {
+            this.shockwaves[i].draw(ctx);
+        }
+
         // Floating texts
         for (let i = 0; i < this.floatingTexts.length; i++) {
             this.floatingTexts[i].draw(ctx);
@@ -225,6 +339,7 @@ class ParticleEngine {
 
     clear() {
         this.particles = [];
+        this.shockwaves = [];
         this.floatingTexts = [];
     }
 }

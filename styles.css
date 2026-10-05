@@ -439,6 +439,13 @@ canvas {
     box-shadow: 2px 2px 0px var(--neon-cyan);
 }
 
+.badge.mine {
+    background: #000;
+    border: 1px solid #ffe600;
+    color: #ffe600;
+    box-shadow: 2px 2px 0px #ffe600;
+}
+
 .badge.phase {
     background: rgba(176, 38, 255, 0.3);
     border: 1px solid var(--neon-purple);
@@ -714,6 +721,28 @@ canvas {
     color: #000;
 }
 
+.touch-btn.drift-btn {
+    border: 2px solid #fff;
+    background: #0077ff;
+    box-shadow: 4px 4px 0px #ffe600, 0 0 14px #0077ff;
+}
+
+.touch-btn.drift-btn:active {
+    background: #ffe600;
+    color: #000;
+}
+
+.touch-btn.mine-btn {
+    border: 2px solid #fff;
+    background: #e67e00;
+    box-shadow: 4px 4px 0px #ffe600, 0 0 14px #ff9900;
+}
+
+.touch-btn.mine-btn:active {
+    background: #ff0055;
+    color: #fff;
+}
+
 .touch-btn.boost-btn {
     border: 2px solid #fff;
     background: var(--neon-magenta);
@@ -723,6 +752,17 @@ canvas {
 .touch-btn.boost-btn:active {
     background: #00f0ff;
     color: #000;
+}
+
+.debrief-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.debrief-actions .cyber-btn {
+    padding: 8px 10px;
+    letter-spacing: 1px;
 }
 
 @media (max-width: 768px) {

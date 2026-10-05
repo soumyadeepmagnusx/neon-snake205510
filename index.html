@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>NEON_SNAKE.2077 // Brutal Synthwave Arcade</title>
+    <meta name="theme-color" content="#060713">
+    <meta name="description" content="A brutal synthwave cyber snake arcade game featuring real-time WebRTC P2P multiplayer, laser boss raids, plasma cannons, and tactile retro audio.">
+    <meta property="og:title" content="NEON_SNAKE.2077 // Brutal Synthwave Arcade">
+    <meta property="og:description" content="High-octane synthwave snake arcade with WebRTC P2P multiplayer, laser boss raids, plasma cannons, and tactile retro audio.">
+    <meta property="og:type" content="website">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="styles.css">
     <!-- PeerJS for WebRTC Peer-to-Peer Multiplayer -->
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -28,6 +35,7 @@
 
             <div class="header-deck-tools">
                 <button id="trackToggleBtn" class="cyber-btn" title="Switch Synthwave Track">🎵 CYBER CITY</button>
+                <button id="voiceToggleBtn" class="cyber-btn active" title="Toggle Cyber Voice Announcer">🎙️ VOICE ON</button>
                 <button id="radarToggleBtn" class="cyber-btn active" title="Toggle Tactical Radar">RADAR ON</button>
                 <button id="leaderboardBtn" class="cyber-btn" title="Hall of Fame">🏆 ARCHIVES</button>
                 <button id="crtToggleBtn" class="cyber-btn active" title="Toggle CRT Shader">CRT ON</button>
@@ -109,6 +117,36 @@
                             </div>
                         </div>
 
+                        <!-- Cyber Forge Customizer -->
+                        <div class="config-bar" style="margin-top: 8px;">
+                            <div class="config-group">
+                                <label class="config-label">CHASSIS HEAD</label>
+                                <select id="headModelSelect" class="cyber-select">
+                                    <option value="apex">APEX VISOR</option>
+                                    <option value="mecha">MECHA HORN</option>
+                                    <option value="skull">CYBER SKULL</option>
+                                    <option value="lightcycle">LIGHTCYCLE</option>
+                                </select>
+                            </div>
+                            <div class="config-group">
+                                <label class="config-label">TRAIL FX</label>
+                                <select id="trailStyleSelect" class="cyber-select">
+                                    <option value="ribbon">NEON RIBBON</option>
+                                    <option value="matrix">MATRIX PULSE</option>
+                                    <option value="plasma">RGB PLASMA</option>
+                                    <option value="hyperwave">HYPERWAVE</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Reproducible Daily Challenge Seed Input -->
+                        <div class="config-bar" style="margin-top: 8px;">
+                            <div class="config-group" style="width: 100%;">
+                                <label class="config-label">MISSION SEED (OPTIONAL / DAILY)</label>
+                                <input id="missionSeedInput" class="cyber-input" type="text" placeholder="e.g. DAILY-2077 (LEAVE BLANK FOR RANDOM)" maxlength="16" style="padding: 6px 10px; font-size: 11px;">
+                            </div>
+                        </div>
+
                         <!-- P2P Online Lobby Box -->
                         <div id="p2pLobby" class="p2p-panel">
                             <p style="font-size: 12px; color: #a0aec0;">Direct WebRTC DataChannel connection with zero server lag.</p>
@@ -129,6 +167,8 @@
                         <div class="controls-guide">
                             <span><span class="key-tag">WASD / ARROWS</span> Move</span>
                             <span><span class="key-tag">SPACE / SHIFT</span> Turbo</span>
+                            <span><span class="key-tag">B / C</span> Drift</span>
+                            <span><span class="key-tag">E / Q</span> Mine</span>
                             <span><span class="key-tag">F / J</span> Cannon</span>
                             <span><span class="key-tag">GAMEPAD</span> Ready</span>
                         </div>
@@ -145,9 +185,15 @@
                             FINAL SCORE: 0
                         </p>
 
-                        <div style="margin: 12px 0 18px 0;">
+                        <div style="margin: 12px 0 14px 0;">
                             <label style="font-size: 11px; color: #a0aec0; letter-spacing: 1px; display: block; margin-bottom: 4px;">RECORD CYBER TAG:</label>
                             <input id="playerHandleInput" class="cyber-input" type="text" placeholder="YOUR CALLSIGN" maxlength="10" value="RUNNER_01">
+                        </div>
+
+                        <div class="debrief-actions" style="display: flex; gap: 6px; margin-bottom: 14px;">
+                            <button id="btnVcrReplay" class="cyber-btn" style="flex: 1; font-size: 11px; border-color: #39ff14; color: #39ff14;" title="Slow-Motion Tape Replay of Fatal Crash">⏪ VCR REPLAY</button>
+                            <button id="btnCopyDebrief" class="cyber-btn" style="flex: 1; font-size: 11px;">📋 COPY DEBRIEF</button>
+                            <button id="btnDownloadSnapshot" class="cyber-btn magenta" style="flex: 1; font-size: 11px;">📸 SAVE CARD</button>
                         </div>
 
                         <button id="restartBtn" class="btn-kill-switch" style="width: 100%;">
@@ -195,6 +241,8 @@
                 <button id="touchDown" class="cyber-btn d-pad-down">▼</button>
             </div>
             <div class="mobile-actions">
+                <button id="touchDrift" class="touch-btn drift-btn">DRIFT</button>
+                <button id="touchMine" class="touch-btn mine-btn">MINE</button>
                 <button id="touchFire" class="touch-btn fire-btn">FIRE</button>
                 <button id="touchBoost" class="touch-btn boost-btn">TURBO</button>
             </div>

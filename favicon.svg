@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="64" height="64" rx="10" fill="#060713" stroke="#ff0055" stroke-width="2"/>
+  <!-- Snake Grid Body -->
+  <path d="M 12 48 L 28 48 L 28 28 L 48 28 L 48 18 L 40 18" fill="none" stroke="#00f0ff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" filter="url(#neon-glow)"/>
+  <!-- Snake Cyber Head -->
+  <circle cx="48" cy="18" r="7" fill="#ffffff" filter="url(#neon-glow)"/>
+  <circle cx="50" cy="16" r="2" fill="#ff0055"/>
+  <circle cx="46" cy="16" r="2" fill="#ff0055"/>
+  <!-- Energy Core -->
+  <polygon points="18,18 24,12 30,18 24,24" fill="#39ff14" filter="url(#neon-glow)"/>
+</svg>

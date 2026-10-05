@@ -106,6 +106,14 @@ class CyberAudioEngine {
             this.analyser.fftSize = 64;
             this.masterGain.connect(this.analyser);
             this.analyser.connect(this.ctx.destination);
+
+            // Reusable white noise buffer for explosion & distortion SFX
+            const bufferSize = Math.floor(this.ctx.sampleRate * 0.5);
+            this.noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+            const data = this.noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
         }
         if (this.ctx.state === 'suspended') {
             this.ctx.resume();
@@ -577,6 +585,121 @@ class CyberAudioEngine {
             osc.start(time);
             osc.stop(time + 0.15);
         }
+    }
+
+    playPortalWarp() {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+        osc.frequency.exponentialRampToValueAtTime(220, now + 0.3);
+
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.3);
+    }
+
+    playMineArm() {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1200, now);
+        osc.frequency.setValueAtTime(1800, now + 0.04);
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.1);
+    }
+
+    playMineDetonate() {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+
+        // Sub bass blast
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.exponentialRampToValueAtTime(25, now + 0.45);
+
+        gain.gain.setValueAtTime(0.6, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.45);
+
+        // Electric distortion noise
+        if (this.noiseBuffer) {
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = this.noiseBuffer;
+            const nFilter = this.ctx.createBiquadFilter();
+            nFilter.type = 'bandpass';
+            nFilter.frequency.setValueAtTime(600, now);
+            nFilter.frequency.exponentialRampToValueAtTime(150, now + 0.35);
+
+            const nGain = this.ctx.createGain();
+            nGain.gain.setValueAtTime(0.45, now);
+            nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+            noise.connect(nFilter);
+            nFilter.connect(nGain);
+            nGain.connect(this.sfxGain);
+            noise.start(now);
+            noise.stop(now + 0.35);
+        }
+    }
+
+    // Cyber Voice Announcer System
+    announce(text, priority = false) {
+        if (this.isMuted) return;
+        const enabled = localStorage.getItem('neonSnake_voiceEnabled') !== 'false';
+        if (!enabled) return;
+
+        if ('speechSynthesis' in window) {
+            try {
+                if (priority) window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(text);
+                utter.rate = 1.15;
+                utter.pitch = 0.85;
+                utter.volume = 0.8;
+                
+                // Pick an English or robotic-sounding voice if available
+                const voices = window.speechSynthesis.getVoices();
+                const cyberVoice = voices.find(v => v.lang && v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('David') || v.name.includes('Robot') || v.name.includes('Zira') || v.name.includes('Samantha')));
+                if (cyberVoice) utter.voice = cyberVoice;
+
+                window.speechSynthesis.speak(utter);
+            } catch (e) {
+                // Non-blocking fallback
+            }
+        }
+    }
+
+    toggleVoice() {
+        const current = localStorage.getItem('neonSnake_voiceEnabled') !== 'false';
+        const next = !current;
+        localStorage.setItem('neonSnake_voiceEnabled', next.toString());
+        return next;
     }
 }
 

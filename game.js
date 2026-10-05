@@ -65,6 +65,19 @@ class NeonSnakeGame {
         this.deathCamTimer = 0;
         this.timeDilation = 1.0;
 
+        // Quantum Portals & Proximity Mines
+        this.portals = [];
+        this.mines = [];
+
+        // Vintage VCR Death Replay System
+        this.replayBuffer = [];
+        this.isVcrReplaying = false;
+        this.vcrPlaybackIndex = 0;
+
+        // Seeded PRNG for Reproducible / Daily Challenge Runs
+        this.customSeed = null;
+        this.seedRng = null;
+
         // Color palettes for themes
         this.themes = {
             neon2077: {
@@ -200,9 +213,22 @@ class NeonSnakeGame {
                     if (window.cyberAudio) window.cyberAudio.playBoost();
                 }
 
+                // Tactical Drift / Brake (B or C)
+                if (e.code === 'KeyB' || e.code === 'KeyC') {
+                    this.player1.setDrifting(true);
+                    if (window.particleEngine && this.player1.body.length > 0) {
+                        window.particleEngine.addDriftSparks(this.player1.body[0].pixelX, this.player1.body[0].pixelY, this.player1.dir);
+                    }
+                }
+
                 // Plasma Cannon Fire (F or J)
                 if (e.code === 'KeyF' || e.code === 'KeyJ') {
                     this.firePlayerPlasma(this.player1);
+                }
+
+                // Deploy Proximity Cyber Mine (E or Q)
+                if (e.code === 'KeyE' || e.code === 'KeyQ') {
+                    this.deployPlayerMine(this.player1);
                 }
 
                 // Send P2P input if in online mode
@@ -213,6 +239,13 @@ class NeonSnakeGame {
                         boost: this.player1.isBoosting
                     });
                 }
+            }
+
+            // VCR Replay Keyboard Shortcuts
+            if (this.isVcrReplaying && (e.code === 'Escape' || e.code === 'Space')) {
+                this.stopVcrReplay();
+            } else if (this.gameOver && e.code === 'KeyR') {
+                this.startVcrReplay();
             }
 
             // Player 2 controls (Arrow keys in local 2-Player mode)
@@ -241,6 +274,10 @@ class NeonSnakeGame {
                     if (this.mode === 'online' && !window.cyberP2P.isHost) {
                         window.cyberP2P.send({ type: 'INPUT_BOOST', boost: false });
                     }
+                }
+
+                if (e.code === 'KeyB' || e.code === 'KeyC') {
+                    this.player1.setDrifting(false);
                 }
             }
 
@@ -298,6 +335,13 @@ class NeonSnakeGame {
         const boostPressed = gp.buttons[0]?.pressed || gp.buttons[7]?.pressed;
         this.player1.setBoosting(boostPressed);
 
+        // Tactical Drift / Brake (B button or Left Trigger)
+        const driftPressed = !!(gp.buttons[1]?.pressed || gp.buttons[6]?.pressed);
+        this.player1.setDrifting(driftPressed);
+        if (driftPressed && window.particleEngine && this.player1.body.length > 0) {
+            window.particleEngine.addDriftSparks(this.player1.body[0].pixelX, this.player1.body[0].pixelY, this.player1.dir);
+        }
+
         // Shoot Plasma (X button or Right Bumper)
         const shootPressed = gp.buttons[2]?.pressed || gp.buttons[5]?.pressed;
         if (shootPressed && !this.gamepadLastButtons.shoot) {
@@ -312,6 +356,13 @@ class NeonSnakeGame {
             }
         }
         this.gamepadLastButtons.shoot = shootPressed;
+
+        // Deploy Proximity Mine (Y button or Left Bumper)
+        const minePressed = gp.buttons[3]?.pressed || gp.buttons[4]?.pressed;
+        if (minePressed && !this.gamepadLastButtons.mine) {
+            this.deployPlayerMine(this.player1);
+        }
+        this.gamepadLastButtons.mine = minePressed;
     }
 
     setupEventListeners() {
@@ -342,6 +393,86 @@ class NeonSnakeGame {
                 if (window.cyberAudio) window.cyberAudio.playClick();
             });
         }
+
+        // Cyber Forge Selectors
+        const headModelSelect = document.getElementById('headModelSelect');
+        if (headModelSelect) {
+            headModelSelect.value = localStorage.getItem('neonSnake_headModel') || 'apex';
+            headModelSelect.addEventListener('change', (e) => {
+                localStorage.setItem('neonSnake_headModel', e.target.value);
+                if (this.player1) this.player1.headModel = e.target.value;
+                if (window.cyberAudio) window.cyberAudio.playClick();
+            });
+        }
+
+        const trailStyleSelect = document.getElementById('trailStyleSelect');
+        if (trailStyleSelect) {
+            trailStyleSelect.value = localStorage.getItem('neonSnake_trailStyle') || 'ribbon';
+            trailStyleSelect.addEventListener('change', (e) => {
+                localStorage.setItem('neonSnake_trailStyle', e.target.value);
+                if (this.player1) this.player1.trailStyle = e.target.value;
+                if (window.cyberAudio) window.cyberAudio.playClick();
+            });
+        }
+
+        // Tactical Debrief Buttons
+        const copyDebriefBtn = document.getElementById('btnCopyDebrief');
+        if (copyDebriefBtn) {
+            copyDebriefBtn.addEventListener('click', () => {
+                if (window.cyberAudio) window.cyberAudio.playClick();
+                this.exportTacticalDebrief();
+            });
+        }
+
+        const downloadSnapshotBtn = document.getElementById('btnDownloadSnapshot');
+        if (downloadSnapshotBtn) {
+            downloadSnapshotBtn.addEventListener('click', () => {
+                if (window.cyberAudio) window.cyberAudio.playClick();
+                this.downloadDebriefSnapshot();
+            });
+        }
+
+        // Vintage VCR Death Replay Button
+        const vcrBtn = document.getElementById('btnVcrReplay');
+        if (vcrBtn) {
+            vcrBtn.addEventListener('click', () => {
+                if (window.cyberAudio) window.cyberAudio.playClick();
+                this.startVcrReplay();
+            });
+        }
+
+        // Voice Announcer Toggle Button
+        const voiceBtn = document.getElementById('voiceToggleBtn');
+        if (voiceBtn) {
+            const isVoiceOn = localStorage.getItem('neonSnake_voiceEnabled') !== 'false';
+            voiceBtn.innerText = isVoiceOn ? '🎙️ VOICE ON' : '🎙️ VOICE OFF';
+            voiceBtn.classList.toggle('active', isVoiceOn);
+            voiceBtn.addEventListener('click', () => {
+                if (window.cyberAudio) {
+                    const next = window.cyberAudio.toggleVoice();
+                    voiceBtn.innerText = next ? '🎙️ VOICE ON' : '🎙️ VOICE OFF';
+                    voiceBtn.classList.toggle('active', next);
+                    window.cyberAudio.playClick();
+                    if (next) window.cyberAudio.announce('Comms online.');
+                }
+            });
+        }
+
+        // Mission Seed Input for Reproducible Daily Challenge
+        const seedInput = document.getElementById('missionSeedInput');
+        if (seedInput) {
+            seedInput.addEventListener('input', (e) => {
+                this.customSeed = e.target.value.trim() || null;
+            });
+        }
+
+        // Canvas click handler (exits VCR replay if active)
+        this.canvas.addEventListener('click', () => {
+            if (this.isVcrReplaying) {
+                if (window.cyberAudio) window.cyberAudio.playClick();
+                this.stopVcrReplay();
+            }
+        });
 
         // Start / Restart / Resume buttons
         document.getElementById('startBtn').addEventListener('click', () => {
@@ -517,11 +648,41 @@ class NeonSnakeGame {
             boostBtn.addEventListener('mouseup', endBoost);
         }
 
+        // Virtual Drift button
+        const driftBtn = document.getElementById('touchDrift');
+        if (driftBtn) {
+            const startDrift = (e) => {
+                e.preventDefault();
+                if (this.player1) {
+                    this.player1.setDrifting(true);
+                    if (window.particleEngine && this.player1.body.length > 0) {
+                        window.particleEngine.addDriftSparks(this.player1.body[0].pixelX, this.player1.body[0].pixelY, this.player1.dir);
+                    }
+                }
+            };
+            const endDrift = (e) => {
+                e.preventDefault();
+                if (this.player1) this.player1.setDrifting(false);
+            };
+            driftBtn.addEventListener('touchstart', startDrift, { passive: false });
+            driftBtn.addEventListener('touchend', endDrift, { passive: false });
+            driftBtn.addEventListener('mousedown', startDrift);
+            driftBtn.addEventListener('mouseup', endDrift);
+        }
+
         // Virtual Fire button
         const fireBtn = document.getElementById('touchFire');
         if (fireBtn) {
             bindTouch('touchFire', () => {
                 this.firePlayerPlasma(this.player1);
+            });
+        }
+
+        // Virtual Mine button
+        const mineTouchBtn = document.getElementById('touchMine');
+        if (mineTouchBtn) {
+            bindTouch('touchMine', () => {
+                this.deployPlayerMine(this.player1);
             });
         }
     }
@@ -566,6 +727,10 @@ class NeonSnakeGame {
         this.foods = [];
         this.obstacles = [];
         this.projectiles = [];
+        this.mines = [];
+        this.portals = [];
+        this.replayBuffer = [];
+        this.isVcrReplaying = false;
         this.laserSweepTimer = 0;
         this.laserSweepActive = false;
         this.laserSweepAngle = 0;
@@ -576,6 +741,19 @@ class NeonSnakeGame {
         this.deathCamActive = false;
         this.timeDilation = 1.0;
         window.particleEngine.clear();
+
+        // Initialize PRNG if custom seed specified
+        if (this.customSeed) {
+            this.initSeedRng(this.customSeed);
+            window.particleEngine.addText(`SEED: ${this.customSeed}`, this.canvas.width / 2, 90, '#ffe600', 14);
+        } else {
+            this.seedRng = null;
+        }
+
+        // Voice announcement
+        if (window.cyberAudio) {
+            window.cyberAudio.announce("Grid initialized. Commencing run.");
+        }
 
         // Speed interval based on difficulty
         let baseSpeed = 0.11;
@@ -635,12 +813,248 @@ class NeonSnakeGame {
             this.snakes.push(this.player1, this.player2);
         }
 
+        // Apply Cyber Forge preferences to Player 1
+        if (this.player1) {
+            this.player1.headModel = localStorage.getItem('neonSnake_headModel') || 'apex';
+            this.player1.trailStyle = localStorage.getItem('neonSnake_trailStyle') || 'ribbon';
+        }
+
         // Spawn initial food batches
         for (let i = 0; i < 6; i++) {
             this.spawnFood();
         }
 
+        // Spawn Linked Quantum Portals
+        this.spawnPortals();
+
         this.updateHUD();
+    }
+
+    initSeedRng(seedStr) {
+        let h = 2166136261 >>> 0;
+        for (let i = 0; i < seedStr.length; i++) {
+            h = Math.imul(h ^ seedStr.charCodeAt(i), 16777619);
+        }
+        let a = h >>> 0;
+        this.seedRng = function() {
+            let t = a += 0x6D2B79F5;
+            t = Math.imul(t ^ t >>> 15, t | 1);
+            t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+            return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+    }
+
+    random() {
+        return this.seedRng ? this.seedRng() : Math.random();
+    }
+
+    findFreeGridPos() {
+        let x, y, occupied;
+        let attempts = 0;
+        do {
+            x = Math.floor(this.random() * (this.gridWidth - 6)) + 3;
+            y = Math.floor(this.random() * (this.gridHeight - 6)) + 3;
+            occupied = this.isOccupied(x, y);
+            attempts++;
+        } while (occupied && attempts < 100);
+        return { x, y };
+    }
+
+    spawnPortals() {
+        this.portals = [];
+        const p1 = this.findFreeGridPos();
+        const p2 = this.findFreeGridPos();
+
+        this.portals.push({
+            id: 'alpha',
+            name: 'PORTAL α',
+            x: p1.x,
+            y: p1.y,
+            pixelX: p1.x * this.cellSize + this.cellSize / 2,
+            pixelY: p1.y * this.cellSize + this.cellSize / 2,
+            color: '#00f0ff',
+            targetIndex: 1,
+            pulse: 0
+        });
+
+        this.portals.push({
+            id: 'omega',
+            name: 'PORTAL Ω',
+            x: p2.x,
+            y: p2.y,
+            pixelX: p2.x * this.cellSize + this.cellSize / 2,
+            pixelY: p2.y * this.cellSize + this.cellSize / 2,
+            color: '#ff7700',
+            targetIndex: 0,
+            pulse: Math.PI
+        });
+    }
+
+    deployPlayerMine(snake) {
+        if (!snake || !snake.isAlive) return;
+        const mine = snake.deployMine();
+        if (mine) {
+            this.mines.push(mine);
+            if (window.particleEngine) {
+                window.particleEngine.addText('MINE ARMED', mine.pixelX, mine.pixelY - 12, '#ffe600', 12);
+            }
+            this.updateHUD();
+        }
+    }
+
+    updatePortals(dt) {
+        for (const portal of this.portals) {
+            portal.pulse = (portal.pulse + dt * 4) % (Math.PI * 2);
+        }
+
+        // Projectiles entering portals
+        for (const proj of this.projectiles) {
+            for (const p of this.portals) {
+                const dist = Math.hypot(proj.x - p.pixelX, proj.y - p.pixelY);
+                if (dist < this.cellSize * 0.9 && !proj.teleported) {
+                    const target = this.portals[p.targetIndex];
+                    if (target) {
+                        proj.x = target.pixelX + (proj.vx > 0 ? 16 : (proj.vx < 0 ? -16 : 0));
+                        proj.y = target.pixelY + (proj.vy > 0 ? 16 : (proj.vy < 0 ? -16 : 0));
+                        proj.teleported = true;
+                        if (window.particleEngine) {
+                            window.particleEngine.spawnPortalWarp(p.pixelX, p.pixelY, p.color, 8);
+                            window.particleEngine.spawnPortalWarp(target.pixelX, target.pixelY, target.color, 8);
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    updateMines(dt) {
+        for (let m = this.mines.length - 1; m >= 0; m--) {
+            const mine = this.mines[m];
+            mine.life -= dt;
+            if (mine.armTimer > 0) {
+                mine.armTimer -= dt;
+                if (mine.armTimer <= 0) mine.isArmed = true;
+            }
+
+            if (mine.life <= 0) {
+                this.mines.splice(m, 1);
+                continue;
+            }
+
+            if (mine.isArmed) {
+                let triggered = false;
+                for (const snake of this.snakes) {
+                    if (!snake.isAlive || snake.body.length === 0) continue;
+                    if (snake === mine.owner && mine.life > 23.5) continue;
+
+                    for (const seg of snake.body) {
+                        const dist = Math.hypot(seg.pixelX - mine.pixelX, seg.pixelY - mine.pixelY);
+                        if (dist < this.cellSize * 1.5) {
+                            triggered = true;
+                            break;
+                        }
+                    }
+                    if (triggered) break;
+                }
+
+                if (!triggered) {
+                    for (const proj of this.projectiles) {
+                        if (Math.hypot(proj.x - mine.pixelX, proj.y - mine.pixelY) < this.cellSize) {
+                            triggered = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (triggered) {
+                    if (window.particleEngine) {
+                        window.particleEngine.spawnMineExplosion(mine.pixelX, mine.pixelY);
+                        window.particleEngine.addText('MINE DETONATED!', mine.pixelX, mine.pixelY - 18, '#ff0055', 18);
+                    }
+                    if (window.cyberAudio) window.cyberAudio.playMineDetonate();
+                    this.cameraShake = Math.max(this.cameraShake, 0.4);
+
+                    for (const snake of this.snakes) {
+                        if (!snake.isAlive) continue;
+                        const headDist = Math.hypot(snake.body[0].pixelX - mine.pixelX, snake.body[0].pixelY - mine.pixelY);
+                        if (headDist < this.cellSize * 3.5) {
+                            if (snake.isBoss) {
+                                snake.takeDamage(40);
+                                if (window.particleEngine) {
+                                    window.particleEngine.addText('-40 HP', snake.body[0].pixelX, snake.body[0].pixelY - 25, '#ffe600', 18);
+                                }
+                            } else if (snake !== mine.owner) {
+                                const dropCount = Math.min(3, Math.max(1, snake.body.length - 2));
+                                for (let k = 0; k < dropCount; k++) {
+                                    const popped = snake.body.pop();
+                                    if (popped) {
+                                        this.foods.push({
+                                            x: popped.x,
+                                            y: popped.y,
+                                            pixelX: popped.pixelX,
+                                            pixelY: popped.pixelY,
+                                            type: 'normal',
+                                            color: '#ff0055',
+                                            points: 15,
+                                            createdAt: performance.now()
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    this.obstacles = this.obstacles.filter(obs => {
+                        const obPixX = obs.x * this.cellSize + this.cellSize / 2;
+                        const obPixY = obs.y * this.cellSize + this.cellSize / 2;
+                        return Math.hypot(obPixX - mine.pixelX, obPixY - mine.pixelY) > this.cellSize * 2.2;
+                    });
+
+                    this.mines.splice(m, 1);
+                }
+            }
+        }
+    }
+
+    recordReplayFrame() {
+        if (!this.player1 || this.player1.body.length === 0) return;
+        const frame = {
+            p1: {
+                dir: { ...this.player1.dir },
+                body: this.player1.body.map(s => ({ x: s.x, y: s.y, px: s.pixelX, py: s.pixelY })),
+                score: this.player1.score,
+                isBoosting: this.player1.isBoosting
+            },
+            snakes: this.snakes.filter(s => s !== this.player1 && s.isAlive).map(s => ({
+                id: s.id,
+                head: { px: s.body[0]?.pixelX, py: s.body[0]?.pixelY },
+                color: s.colorScheme.glow
+            })),
+            projectiles: this.projectiles.map(p => ({ x: p.x, y: p.y, color: p.color })),
+            foods: this.foods.map(f => ({ x: f.x, y: f.y, color: f.color })),
+            time: performance.now()
+        };
+
+        this.replayBuffer.push(frame);
+        if (this.replayBuffer.length > 120) {
+            this.replayBuffer.shift();
+        }
+    }
+
+    startVcrReplay() {
+        if (this.replayBuffer.length < 5) return;
+        this.isVcrReplaying = true;
+        this.vcrPlaybackIndex = 0;
+        document.getElementById('gameOverModal').style.display = 'none';
+        if (window.particleEngine) {
+            window.particleEngine.addText('<< VCR REPLAY >>', this.canvas.width / 2, this.canvas.height / 2, '#39ff14', 22);
+        }
+    }
+
+    stopVcrReplay() {
+        this.isVcrReplaying = false;
+        document.getElementById('gameOverModal').style.display = 'flex';
     }
 
     togglePause() {
@@ -651,10 +1065,10 @@ class NeonSnakeGame {
     generateObstacles(count) {
         this.obstacles = [];
         for (let i = 0; i < count; i++) {
-            const x = Math.floor(Math.random() * (this.gridWidth - 8)) + 4;
-            const y = Math.floor(Math.random() * (this.gridHeight - 8)) + 4;
-            const isHorizontal = Math.random() > 0.5;
-            const length = Math.floor(Math.random() * 3) + 2;
+            const x = Math.floor(this.random() * (this.gridWidth - 8)) + 4;
+            const y = Math.floor(this.random() * (this.gridHeight - 8)) + 4;
+            const isHorizontal = this.random() > 0.5;
+            const length = Math.floor(this.random() * 3) + 2;
 
             for (let l = 0; l < length; l++) {
                 const ox = isHorizontal ? x + l : x;
@@ -675,7 +1089,7 @@ class NeonSnakeGame {
 
         // Weighted random selection
         const totalWeight = types.reduce((acc, t) => acc + t.weight, 0);
-        let rand = Math.random() * totalWeight;
+        let rand = this.random() * totalWeight;
         let chosenType = types[0];
         for (const t of types) {
             if (rand < t.weight) {
@@ -689,8 +1103,8 @@ class NeonSnakeGame {
         let x, y, occupied;
         let attempts = 0;
         do {
-            x = Math.floor(Math.random() * this.gridWidth);
-            y = Math.floor(Math.random() * this.gridHeight);
+            x = Math.floor(this.random() * this.gridWidth);
+            y = Math.floor(this.random() * this.gridHeight);
             occupied = this.isOccupied(x, y);
             attempts++;
         } while (occupied && attempts < 100);
@@ -736,6 +1150,32 @@ class NeonSnakeGame {
                 snake.kill();
                 this.checkGameOver();
                 return false;
+            }
+        }
+
+        // Quantum Portal Traversal
+        if (snake.portalCooldown <= 0) {
+            for (let i = 0; i < this.portals.length; i++) {
+                const p = this.portals[i];
+                if (p.x === newHeadX && p.y === newHeadY) {
+                    const target = this.portals[p.targetIndex];
+                    if (target) {
+                        newHeadX = (target.x + snake.dir.x + gridWidth) % gridWidth;
+                        newHeadY = (target.y + snake.dir.y + gridHeight) % gridHeight;
+                        snake.portalCooldown = 1.6;
+
+                        if (window.particleEngine) {
+                            window.particleEngine.spawnPortalWarp(p.pixelX, p.pixelY, p.color);
+                            window.particleEngine.spawnPortalWarp(target.pixelX, target.pixelY, target.color);
+                            window.particleEngine.addText('QUANTUM WARP', p.pixelX, p.pixelY - 14, p.color, 16);
+                        }
+                        if (window.cyberAudio) {
+                            window.cyberAudio.playPortalWarp();
+                            if (snake === this.player1) window.cyberAudio.announce('Quantum jump.');
+                        }
+                        break;
+                    }
+                }
             }
         }
 
@@ -1188,6 +1628,15 @@ class NeonSnakeGame {
         // Update Laser Sweep Hazard
         this.updateLaserSweepHazard(dt);
 
+        // Update Quantum Portals & Proximity Mines
+        this.updatePortals(dt);
+        this.updateMines(dt);
+
+        // Record Replay Frame for VCR Fatal Replay
+        if (this.isRunning && !this.gameOver && this.player1 && this.player1.isAlive) {
+            this.recordReplayFrame();
+        }
+
         // Update particles and visual dust
         window.particleEngine.update(dt, this.canvas.width, this.canvas.height);
 
@@ -1293,22 +1742,33 @@ class NeonSnakeGame {
         // 6. Draw Obstacles (Neon Data Barriers)
         this.drawObstacles(ctx);
 
-        // 7. Draw Foods & Powerups
+        // 7. Draw Quantum Portals
+        this.drawPortals(ctx);
+
+        // 8. Draw Proximity Cyber Mines
+        this.drawMines(ctx);
+
+        // 9. Draw Foods & Powerups
         this.drawFoods(ctx);
 
-        // 8. Draw Snakes
+        // 10. Draw Snakes
         for (const s of this.snakes) {
             s.draw(ctx, this.cellSize);
         }
 
-        // 9. Draw Plasma Projectiles
+        // 11. Draw Plasma Projectiles
         this.drawProjectiles(ctx);
 
-        // 10. Draw Holographic Tactical Radar / Minimap
+        // 12. Draw Holographic Tactical Radar / Minimap
         this.drawTacticalRadar(ctx);
 
-        // 11. Draw Particles & Overlays
+        // 13. Draw Particles & Overlays
         window.particleEngine.draw(ctx, w, h);
+
+        // 14. Retro VCR Death Replay Overlay
+        if (this.isVcrReplaying) {
+            this.drawVcrReplay(ctx, w, h);
+        }
 
         ctx.restore();
     }
@@ -1334,6 +1794,197 @@ class NeonSnakeGame {
 
             ctx.restore();
         }
+        ctx.restore();
+    }
+
+    drawPortals(ctx) {
+        for (const portal of this.portals) {
+            ctx.save();
+            ctx.translate(portal.pixelX, portal.pixelY);
+
+            // Rotating elliptical quantum rings
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = portal.color;
+            ctx.strokeStyle = portal.color;
+            ctx.lineWidth = 2.5;
+
+            // Outer ring
+            ctx.beginPath();
+            ctx.ellipse(0, 0, this.cellSize * 0.85, this.cellSize * 0.55, portal.pulse, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Inner counter-rotating ring
+            ctx.beginPath();
+            ctx.ellipse(0, 0, this.cellSize * 0.55, this.cellSize * 0.35, -portal.pulse * 1.5, 0, Math.PI * 2);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Swirling black hole center
+            ctx.fillStyle = 'rgba(6, 7, 19, 0.85)';
+            ctx.beginPath();
+            ctx.arc(0, 0, this.cellSize * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Portal Label
+            ctx.font = "900 9px 'Orbitron', monospace";
+            ctx.fillStyle = portal.color;
+            ctx.textAlign = 'center';
+            ctx.shadowBlur = 8;
+            ctx.fillText(portal.id === 'alpha' ? 'GATE α' : 'GATE Ω', 0, -this.cellSize * 0.95);
+
+            ctx.restore();
+        }
+    }
+
+    drawMines(ctx) {
+        for (const mine of this.mines) {
+            ctx.save();
+            ctx.translate(mine.pixelX, mine.pixelY);
+
+            const isArmed = mine.isArmed;
+            const glowColor = isArmed ? '#ff0055' : '#ffe600';
+            ctx.shadowBlur = isArmed ? 16 : 8;
+            ctx.shadowColor = glowColor;
+
+            // Hazard Proximity Detection Ring
+            if (isArmed) {
+                const ringRadius = this.cellSize * 1.4 + Math.sin(Date.now() * 0.01) * 3;
+                ctx.beginPath();
+                ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255, 0, 85, 0.35)';
+                ctx.setLineDash([4, 4]);
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Spinning triangular cyber mine body
+            ctx.rotate(Date.now() * (isArmed ? 0.004 : 0.001));
+            ctx.fillStyle = '#0a0d18';
+            ctx.strokeStyle = glowColor;
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            for (let i = 0; i < 3; i++) {
+                const a = (i * Math.PI * 2) / 3;
+                const px = Math.cos(a) * 9;
+                const py = Math.sin(a) * 9;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Core blinking optic
+            ctx.fillStyle = isArmed ? (Math.floor(Date.now() / 200) % 2 === 0 ? '#ff0055' : '#ffffff') : '#ffe600';
+            ctx.beginPath();
+            ctx.arc(0, 0, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+    }
+
+    drawVcrReplay(ctx, w, h) {
+        if (!this.isVcrReplaying || this.replayBuffer.length === 0) return;
+
+        // Dark tape backdrop to isolate replay
+        ctx.save();
+        ctx.fillStyle = 'rgba(6, 7, 19, 0.75)';
+        ctx.fillRect(0, 0, w, h);
+        ctx.restore();
+
+        const frame = this.replayBuffer[this.vcrPlaybackIndex];
+        if (frame) {
+            // Draw recorded snake
+            ctx.save();
+            if (frame.p1 && frame.p1.body && frame.p1.body.length > 0) {
+                if (frame.p1.body.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(frame.p1.body[0].px, frame.p1.body[0].py);
+                    for (let i = 1; i < frame.p1.body.length; i++) {
+                        ctx.lineTo(frame.p1.body[i].px, frame.p1.body[i].py);
+                    }
+                    ctx.lineWidth = 10;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.strokeStyle = '#00f0ff';
+                    ctx.shadowBlur = 18;
+                    ctx.shadowColor = '#00f0ff';
+                    ctx.stroke();
+
+                    // Inner bright core
+                    ctx.beginPath();
+                    ctx.moveTo(frame.p1.body[0].px, frame.p1.body[0].py);
+                    for (let i = 1; i < frame.p1.body.length; i++) {
+                        ctx.lineTo(frame.p1.body[i].px, frame.p1.body[i].py);
+                    }
+                    ctx.lineWidth = 4;
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.shadowBlur = 4;
+                    ctx.shadowColor = '#ffffff';
+                    ctx.stroke();
+                }
+
+                for (let i = 0; i < frame.p1.body.length; i++) {
+                    const b = frame.p1.body[i];
+                    ctx.fillStyle = i === 0 ? '#ffffff' : '#00f0ff';
+                    ctx.shadowBlur = 14;
+                    ctx.shadowColor = '#00f0ff';
+                    ctx.beginPath();
+                    ctx.arc(b.px, b.py, i === 0 ? 9 : 6, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+        }
+
+        // Advance replay frame
+        this.vcrPlaybackIndex++;
+        if (this.vcrPlaybackIndex >= this.replayBuffer.length) {
+            this.vcrPlaybackIndex = 0;
+        }
+
+        // Retro VCR Overlay Graphics
+        ctx.save();
+        // Tracking noise lines
+        const trackY = (Date.now() * 0.15) % h;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.fillRect(0, trackY, w, 8);
+        ctx.fillRect(0, (trackY + 120) % h, w, 4);
+
+        // VCR On-Screen Display (OSD)
+        ctx.font = "900 16px 'Orbitron', monospace";
+        ctx.fillStyle = '#39ff14';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#39ff14';
+        ctx.textAlign = 'left';
+
+        // Blinking REC dot
+        const isBlink = Math.floor(Date.now() / 450) % 2 === 0;
+        if (isBlink) {
+            ctx.fillStyle = '#ff0055';
+            ctx.shadowColor = '#ff0055';
+            ctx.beginPath();
+            ctx.arc(28, 38, 6, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.fillStyle = '#39ff14';
+        ctx.shadowColor = '#39ff14';
+        ctx.fillText('PLAY ▷  SP  -00:0' + Math.floor(this.vcrPlaybackIndex / 30) + ':' + (this.vcrPlaybackIndex % 30).toString().padStart(2, '0'), 42, 43);
+
+        ctx.font = "700 11px monospace";
+        ctx.fillText('VCR TRACKING: AUTO // CASSETTE_2077', 42, 62);
+
+        // Exit notice
+        ctx.font = "900 12px 'Orbitron', monospace";
+        ctx.fillStyle = '#ffe600';
+        ctx.shadowColor = '#ffe600';
+        ctx.textAlign = 'center';
+        ctx.fillText('[ PRESS ESCAPE OR CLICK TO RETURN ]', w / 2, h - 25);
+
         ctx.restore();
     }
 
@@ -1513,6 +2164,18 @@ class NeonSnakeGame {
             ctx.fillRect(f.x * scaleX, f.y * scaleY, 2, 2);
         }
 
+        // Quantum Portal blips (dual-color)
+        for (const p of this.portals) {
+            ctx.fillStyle = p.color;
+            ctx.fillRect(p.x * scaleX - 1.5, p.y * scaleY - 1.5, 3.5, 3.5);
+        }
+
+        // Proximity Mine blips
+        ctx.fillStyle = '#ffe600';
+        for (const m of this.mines) {
+            ctx.fillRect(m.gridX * scaleX - 1, m.gridY * scaleY - 1, 2.5, 2.5);
+        }
+
         // Snake heads
         for (const s of this.snakes) {
             if (!s.isAlive) continue;
@@ -1651,8 +2314,9 @@ class NeonSnakeGame {
             const badgeContainer = document.getElementById('activePowerups');
             if (badgeContainer) {
                 let badges = '';
-                // Ammo pips
+                // Ammo and Mines pips
                 badges += `<span class="badge ammo">⚡ ${this.player1.ammo}/${this.player1.maxAmmo}</span>`;
+                badges += `<span class="badge mine">💣 ${this.player1.mines}/${this.player1.maxMines}</span>`;
 
                 if (this.player1.phaseShiftTimer > 0) {
                     badges += `<span class="badge phase">PHASE (${Math.ceil(this.player1.phaseShiftTimer)}s)</span>`;
@@ -1665,6 +2329,81 @@ class NeonSnakeGame {
                 }
                 badgeContainer.innerHTML = badges;
             }
+        }
+    }
+
+    exportTacticalDebrief() {
+        const p = this.player1;
+        const score = p ? p.score : this.score;
+        const kills = p ? p.kills : 0;
+        const length = p ? p.body.length : 0;
+        const dateStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+        const debriefText = [
+            `=========================================`,
+            `  NEON_SNAKE.2077 // TACTICAL DEBRIEF`,
+            `=========================================`,
+            `TIMESTAMP      : ${dateStr}`,
+            `PILOT CALLSIGN : ${p ? p.name : 'AGENT'}`,
+            `OPERATION MODE : ${this.mode.toUpperCase()} [${this.difficulty.toUpperCase()}]`,
+            `CYBER CHASSIS  : ${(p?.headModel || 'apex').toUpperCase()} // ${(p?.trailStyle || 'ribbon').toUpperCase()} TRAIL`,
+            `-----------------------------------------`,
+            `FINAL SCORE    : ${score.toString().padStart(6, '0')}`,
+            `HIGH SCORE     : ${this.highScore.toString().padStart(6, '0')}`,
+            `CHASSIS LENGTH : ${length} NODES`,
+            `HOSTILE KILLS  : ${kills} UNITS`,
+            `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
+            `=========================================`,
+            `GRID PROTOCOL: VERIFIED & LOGGED`,
+            `PLAY AT: https://soumyadeepmagnusx.github.io/neon-snake205510/`
+        ].join('\n');
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(debriefText).then(() => {
+                if (window.particleEngine) {
+                    window.particleEngine.addText('MISSION REPORT COPIED!', this.canvas.width / 2, this.canvas.height / 2, '#39ff14', 18);
+                }
+            }).catch(() => {
+                this.fallbackCopyText(debriefText);
+            });
+        } else {
+            this.fallbackCopyText(debriefText);
+        }
+        return debriefText;
+    }
+
+    fallbackCopyText(text) {
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            if (window.particleEngine) {
+                window.particleEngine.addText('MISSION REPORT COPIED!', this.canvas.width / 2, this.canvas.height / 2, '#39ff14', 18);
+            }
+        } catch (e) {
+            console.warn('Copy debrief fallback error', e);
+        }
+    }
+
+    downloadDebriefSnapshot() {
+        try {
+            const dataUrl = this.canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = `NEON_SNAKE_2077_SCORECARD_${Date.now()}.png`;
+            link.href = dataUrl;
+            link.click();
+            if (window.particleEngine) {
+                window.particleEngine.addText('SNAPSHOT DOWNLOADED', this.canvas.width / 2, this.canvas.height / 2, '#00f0ff', 18);
+            }
+        } catch (e) {
+            console.error('Snapshot export failed', e);
         }
     }
 
@@ -1681,6 +2420,12 @@ class NeonSnakeGame {
             this.fpsTimer = 0;
             const fpsEl = document.getElementById('fpsCounter');
             if (fpsEl) fpsEl.innerText = `${this.fps} FPS`;
+        }
+
+        if (this.isVcrReplaying) {
+            this.draw();
+            requestAnimationFrame((t) => this.loop(t));
+            return;
         }
 
         this.update(dt);
@@ -1702,4 +2447,11 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     };
     requestAnimationFrame((t) => window.game.loop(t));
+
+    // Register PWA Service Worker for Offline Arcade Play
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(err => {
+            console.log('PWA ServiceWorker notice:', err);
+        });
+    }
 });

@@ -25,10 +25,19 @@ A high-octane synthwave & cyberpunk canvas arcade game built with vanilla JavaSc
   - Procedural sound effects: food chime, turbo boost thrust roar, explosion impact, EMP shockwave, and phase warp tone.
 
 - **Advanced Cyber Systems**:
-  - **🛰️ Holographic Tactical Radar**: Real-time minimap radar tracking food clusters, rival snake vectors, boss movements, and laser sweeps.
+  - **🌀 Linked Quantum Portals**: Two active wormhole gates (`GATE α` [Cyan] and `GATE Ω` [Orange]) spawn in the arena. Snakes and plasma bolts entering one portal instantly emerge from the other with quantum shockwaves and preserved momentum.
+  - **💣 Deployable Proximity Cyber Mines**: Press `E` or `Q` to lay armed triangular mines behind your tail. If an enemy snake, laser, or boss steps within range, it detonates, shearing hostile tail segments into collectible food cores and shattering barriers!
+  - **⏪ Vintage VCR Fatal Replay**: Relive your fatal crash in slow-motion with vintage retro VCR tracking lines, blinking `REC ●` indicators, tape static, and retro audio rewind effects.
+  - **🎙️ Synthesized Cyber Voice Announcer**: Integrated robotic neural voice announcing game events in real-time (*"Grid initialized"*, *"Quantum warp"*, *"Anomaly detected"*, *"Critical failure"*).
+  - **🌱 Seeded Daily Challenge Generator**: Enter a reproducible mission seed (e.g. `DAILY-2077`, `#NEXUS-01`) to generate deterministic arenas, competing on fair ground with identical obstacle and powerup spawns!
+  - **🛠️ Cyber Forge Chassis Customizer**: Equip 4 distinct chassis head models (*Apex Visor*, *Mecha Horn*, *Cyber Skull*, *Tron Lightcycle*) and 4 customizable trail FX (*Neon Ribbon*, *Matrix Pulse*, *RGB Plasma*, *Hyperwave*).
+  - **⚡ Tactical Drift / Cyber Brake**: Press `B` or `C` to scrub speed by 55%, carve tight pinpoint hairpins, and emit intense friction spark showers.
+  - **🛰️ Holographic Tactical Radar**: Real-time minimap radar tracking food clusters, rival snake vectors, boss movements, portals, and mines.
   - **👻 Ghost Time-Trial Racer**: Automatically records your personal best solo run and plays it back as a neon shadow snake so you can race against your own record!
   - **⚡ Dynamic Grid Anomalies**: Random cosmic cyber weather events (*Solar Overcharge* with 2x score, *EMP Storm* clearing all barriers, *Neon Eclipse* stealth mode).
   - **⏱️ Slow-Mo Bullet-Time Death Cam**: High-impact time dilation (`0.22x` speed) on crashes with chromatic screen shudder.
+  - **📊 Tactical Debrief Scorecard Exporter**: Generate encrypted mission reports, copy formatted ASCII debriefs to your clipboard, or save a high-res PNG scorecard snapshot directly from the game-over screen.
+  - **📱 Progressive Web App (PWA) Offline Play**: Built with an offline Service Worker and Web App Manifest—installable as a native standalone desktop or mobile application.
   - **🎵 Multi-Track Procedural Jukebox**: Switch between 3 synthwave compositions (*Cyber City 2077* [124 BPM], *Outrun Sunset* [114 BPM], *Hyperdrive* [140 BPM]).
 
 - **5 Intense Game Modes**:
@@ -40,6 +49,8 @@ A high-octane synthwave & cyberpunk canvas arcade game built with vanilla JavaSc
 
 - **Cyber Combat & Power-Ups**:
   - **⚡ Plasma Cannon**: Press `F` / `J` to shoot high-velocity plasma bolts that shatter obstacles and shear enemy snake segments into collectible food bits!
+  - **💣 Proximity Cyber Mines**: Press `E` / `Q` to drop stationary explosive proximity mines that trigger on enemy approach.
+  - **🌀 Quantum Wormhole Gates**: Navigate through portals to escape pinches or launch cross-arena plasma cannon surprise shots.
   - **⚠️ Rotating Laser Sweep**: Central arena death beams that activate periodically and sweep 360° across the grid.
   - **Turbo Overdrive**: Hold `Space` / `Shift` for a 2x speed burst leaving burning neon thermal trails.
   - **Neon Energy Core (Cyan)**: Base energy (+10 pts, grows body, restores ammo and boost).
@@ -59,7 +70,7 @@ A high-octane synthwave & cyberpunk canvas arcade game built with vanilla JavaSc
 
 - **Controller & Touch Ready**:
   - Full native **HTML5 Gamepad API** integration with vibration/rumble support (Xbox, PlayStation, Bluetooth controllers).
-  - Virtual on-screen D-pad and dedicated **FIRE** & **TURBO** action buttons for mobile touchscreens.
+  - Virtual on-screen D-pad and dedicated **DRIFT**, **MINE**, **FIRE** & **TURBO** action buttons for mobile touchscreens.
 
 ---
 
@@ -69,7 +80,10 @@ A high-octane synthwave & cyberpunk canvas arcade game built with vanilla JavaSc
 | :--- | :--- | :--- | :--- | :--- |
 | **Move** | `WASD` or `Arrow Keys` | `Arrow Keys` | Left Stick / D-Pad | `▲ ◀ ▼ ▶` D-Pad |
 | **Turbo Overdrive** | `Space` or `Left Shift` | `Enter` or `Right Ctrl` | `A` Button / `RT` | `TURBO` Button |
+| **Tactical Drift / Brake** | `B` or `C` | N/A | `B` Button / `LT` | `DRIFT` Button |
+| **Drop Proximity Mine** | `E` or `Q` | N/A | `Y` Button / `LB` | `MINE` Button |
 | **Shoot Plasma Cannon** | `F` or `J` | `L` or `Numpad 0` | `X` Button / `RB` | `FIRE` Button |
+| **Instant VCR Replay** | `R` (on Game Over) | N/A | N/A | `VCR REPLAY` Button |
 | **Pause / Resume** | `P` or `Escape` | `P` or `Escape` | `Start` Button | Tap anywhere |
 
 ---
@@ -79,7 +93,7 @@ A high-octane synthwave & cyberpunk canvas arcade game built with vanilla JavaSc
 ### Option 1: Direct Browser Launch
 Open `index.html` directly in any modern web browser (Chrome, Firefox, Edge, Safari).
 
-### Option 2: Local HTTP Server (Recommended for WebRTC P2P)
+### Option 2: Local HTTP Server (Recommended for WebRTC P2P & PWA)
 ```bash
 # Using Python
 python -m http.server 8080
@@ -98,11 +112,14 @@ neon-snake-2077/
 ├── index.html       # Game viewport, HUD, modals, and mobile touch interface
 ├── styles.css       # Synthwave visual styles, scanlines, glow, and theme palettes
 ├── audio.js         # Procedural Web Audio API synth and spectrum visualizer
-├── particles.js     # Particle physics engine and floating combat text
-├── snake.js         # Snake entity, physics, boosting, and power-up states
+├── particles.js     # Particle physics engine, floating text, and drift friction sparks
+├── snake.js         # Snake entity, physics, Cyber Forge heads, and trail renderers
 ├── ai.js            # Heuristic pathfinding and threat avoidance bot controller
 ├── p2p.js           # WebRTC DataChannel peer-to-peer multiplayer manager
-├── game.js          # Core loop, collision detection, game modes, and leaderboard
+├── game.js          # Core loop, collision detection, game modes, and debrief exporter
+├── sw.js            # PWA Service Worker for complete offline play
+├── manifest.json    # Web App Manifest for mobile/desktop installation
+├── favicon.svg      # Cyberpunk neon snake SVG vector icon
 └── README.md        # Documentation and controls guide
 ```
 
