@@ -16,7 +16,7 @@ class NeonSnakeGame {
         this.canvas.height = this.gridHeight * this.cellSize;
 
         // Game State
-        this.mode = 'solo'; // 'solo', 'bots', 'local2p', 'online'
+        this.mode = 'solo'; // 'solo', 'bots', 'boss', 'local2p', 'online'
         this.difficulty = 'arcade'; // 'casual', 'arcade', 'overclocked'
         this.theme = 'neon2077'; // 'neon2077', 'outrun', 'matrix', 'cyberpunk'
         this.isRunning = false;
@@ -27,17 +27,28 @@ class NeonSnakeGame {
         this.combo = 1;
         this.comboTimer = 0;
 
-        // Game entities
+        // Entities & Combat
         this.snakes = [];
         this.player1 = null;
         this.player2 = null;
+        this.bossSnake = null;
         this.foods = [];
         this.obstacles = [];
+        this.projectiles = [];
+
+        // Laser Sweep Arena Hazard
+        this.laserSweepTimer = 0;
+        this.laserSweepActive = false;
+        this.laserSweepAngle = 0;
 
         // Visual / Audio state
         this.cameraShake = 0;
         this.crtFilterEnabled = true;
         this.glowEnabled = true;
+
+        // Gamepad State
+        this.gamepadConnected = false;
+        this.gamepadLastButtons = {};
 
         // Color palettes for themes
         this.themes = {
@@ -86,6 +97,8 @@ class NeonSnakeGame {
             phaseWalker: { id: 'phaseWalker', title: 'Ghost in the Net', desc: 'Phase shift through a lethal barrier', unlocked: false },
             empBlast: { id: 'empBlast', title: 'Grid Blackout', desc: 'Detonate an EMP shockwave', unlocked: false },
             botSlayer: { id: 'botSlayer', title: 'Nexus Breaker', desc: 'Destroy an enemy AI snake', unlocked: false },
+            plasmaSniper: { id: 'plasmaSniper', title: 'Plasma Deadeye', desc: 'Blast and eliminate an enemy with plasma cannon', unlocked: false },
+            bossHunter: { id: 'bossHunter', title: 'Leviathan Down', desc: 'Defeat the Cyber Leviathan Boss', unlocked: false },
             centuryScore: { id: 'centuryScore', title: 'Century Mark', desc: 'Score over 100 points in one run', unlocked: false }
         };
         this.loadAchievements();
@@ -156,13 +169,13 @@ class NeonSnakeGame {
 
             // Player 1 controls (WASD / Arrows in solo)
             if (this.player1 && this.player1.isAlive) {
-                if (e.code === 'KeyW' || (this.mode === 'solo' && e.code === 'ArrowUp')) {
+                if (e.code === 'KeyW' || (this.mode !== 'local2p' && e.code === 'ArrowUp')) {
                     this.player1.setDirection(0, -1);
-                } else if (e.code === 'KeyS' || (this.mode === 'solo' && e.code === 'ArrowDown')) {
+                } else if (e.code === 'KeyS' || (this.mode !== 'local2p' && e.code === 'ArrowDown')) {
                     this.player1.setDirection(0, 1);
-                } else if (e.code === 'KeyA' || (this.mode === 'solo' && e.code === 'ArrowLeft')) {
+                } else if (e.code === 'KeyA' || (this.mode !== 'local2p' && e.code === 'ArrowLeft')) {
                     this.player1.setDirection(-1, 0);
-                } else if (e.code === 'KeyD' || (this.mode === 'solo' && e.code === 'ArrowRight')) {
+                } else if (e.code === 'KeyD' || (this.mode !== 'local2p' && e.code === 'ArrowRight')) {
                     this.player1.setDirection(1, 0);
                 }
 
@@ -170,6 +183,11 @@ class NeonSnakeGame {
                 if (e.code === 'Space' || e.code === 'ShiftLeft') {
                     this.player1.setBoosting(true);
                     if (window.cyberAudio) window.cyberAudio.playBoost();
+                }
+
+                // Plasma Cannon Fire (F or J)
+                if (e.code === 'KeyF' || e.code === 'KeyJ') {
+                    this.firePlayerPlasma(this.player1);
                 }
 
                 // Send P2P input if in online mode
@@ -192,6 +210,10 @@ class NeonSnakeGame {
                 if (e.code === 'Enter' || e.code === 'ControlRight') {
                     this.player2.setBoosting(true);
                 }
+
+                if (e.code === 'Numpad0' || e.code === 'KeyL') {
+                    this.firePlayerPlasma(this.player2);
+                }
             }
         });
 
@@ -213,6 +235,68 @@ class NeonSnakeGame {
                 }
             }
         });
+
+        // Gamepad event listeners
+        window.addEventListener('gamepadconnected', (e) => {
+            console.log('Gamepad connected:', e.gamepad.id);
+            this.gamepadConnected = true;
+            window.particleEngine.addText('GAMEPAD LINKED', this.canvas.width / 2, this.canvas.height / 2, '#39ff14', 18);
+        });
+        window.addEventListener('gamepaddisconnected', () => {
+            this.gamepadConnected = false;
+        });
+    }
+
+    firePlayerPlasma(snake) {
+        if (!snake || !snake.isAlive) return;
+        const proj = snake.shootPlasma();
+        if (proj) {
+            this.projectiles.push(proj);
+            this.cameraShake = Math.max(this.cameraShake, 0.15);
+            this.updateHUD();
+        }
+    }
+
+    pollGamepad() {
+        if (!navigator.getGamepads) return;
+        const gamepads = navigator.getGamepads();
+        const gp = gamepads[0];
+        if (!gp || !this.player1 || !this.player1.isAlive) return;
+
+        // Stick / D-Pad axes
+        const axisX = gp.axes[0] || 0;
+        const axisY = gp.axes[1] || 0;
+        const deadzone = 0.45;
+
+        // Direction mapping
+        if (axisY < -deadzone || gp.buttons[12]?.pressed) {
+            this.player1.setDirection(0, -1);
+        } else if (axisY > deadzone || gp.buttons[13]?.pressed) {
+            this.player1.setDirection(0, 1);
+        } else if (axisX < -deadzone || gp.buttons[14]?.pressed) {
+            this.player1.setDirection(-1, 0);
+        } else if (axisX > deadzone || gp.buttons[15]?.pressed) {
+            this.player1.setDirection(1, 0);
+        }
+
+        // Boost (A button or Right Trigger)
+        const boostPressed = gp.buttons[0]?.pressed || gp.buttons[7]?.pressed;
+        this.player1.setBoosting(boostPressed);
+
+        // Shoot Plasma (X button or Right Bumper)
+        const shootPressed = gp.buttons[2]?.pressed || gp.buttons[5]?.pressed;
+        if (shootPressed && !this.gamepadLastButtons.shoot) {
+            this.firePlayerPlasma(this.player1);
+            if (gp.vibrationActuator && gp.vibrationActuator.playEffect) {
+                gp.vibrationActuator.playEffect('dual-rumble', {
+                    startDelay: 0,
+                    duration: 120,
+                    weakMagnitude: 0.6,
+                    strongMagnitude: 0.3
+                });
+            }
+        }
+        this.gamepadLastButtons.shoot = shootPressed;
     }
 
     setupEventListeners() {
@@ -394,6 +478,14 @@ class NeonSnakeGame {
             boostBtn.addEventListener('mousedown', startBoost);
             boostBtn.addEventListener('mouseup', endBoost);
         }
+
+        // Virtual Fire button
+        const fireBtn = document.getElementById('touchFire');
+        if (fireBtn) {
+            bindTouch('touchFire', () => {
+                this.firePlayerPlasma(this.player1);
+            });
+        }
     }
 
     setMode(mode) {
@@ -412,11 +504,13 @@ class NeonSnakeGame {
         const instructions = document.getElementById('modeInstructions');
         if (instructions) {
             if (mode === 'solo') {
-                instructions.innerText = 'SURVIVAL MODE: Dodge laser obstacles, gather cyber cores, unleash turbo overdrive!';
+                instructions.innerText = 'SURVIVAL MODE: Dodge laser obstacles & rotating sweep rays, gather cyber cores, fire plasma cannon [F]!';
             } else if (mode === 'bots') {
-                instructions.innerText = 'BOT BATTLE: Arena deathmatch against AI snakes with intelligent pathfinding & traps!';
+                instructions.innerText = 'BOT BATTLE: Arena deathmatch against AI snakes with intelligent pathfinding, traps & laser fire!';
+            } else if (mode === 'boss') {
+                instructions.innerText = 'BOSS RAID: Defeat CYBER LEVIATHAN—an armored 16-segment behemoth with plasma cannons and 120 HP!';
             } else if (mode === 'local2p') {
-                instructions.innerText = 'LOCAL 2P: P1 uses WASD + SPACE. P2 uses ARROWS + ENTER. First to crash loses!';
+                instructions.innerText = 'LOCAL 2P: P1 (WASD + Space + F). P2 (Arrows + Enter + L). First to crash loses!';
             } else if (mode === 'online') {
                 instructions.innerText = 'P2P MULTIPLAYER: Create or join a room via WebRTC DataChannel to duel directly!';
             }
@@ -433,6 +527,10 @@ class NeonSnakeGame {
         this.snakes = [];
         this.foods = [];
         this.obstacles = [];
+        this.projectiles = [];
+        this.laserSweepTimer = 0;
+        this.laserSweepActive = false;
+        this.laserSweepAngle = 0;
         window.particleEngine.clear();
 
         // Speed interval based on difficulty
@@ -447,7 +545,7 @@ class NeonSnakeGame {
         document.getElementById('gameOverModal').style.display = 'none';
         document.getElementById('pauseModal').style.display = 'none';
 
-        // Spawn Snakes according to mode
+        // Spawn entities according to mode
         if (this.mode === 'solo') {
             this.player1 = new CyberSnake('p1', 'NEON RUNNER', currentTheme.p1, 10, 18, { x: 1, y: 0 });
             this.player1.baseMoveInterval = baseSpeed;
@@ -464,6 +562,20 @@ class NeonSnakeGame {
 
             this.snakes.push(this.player1, bot1, bot2);
             this.generateObstacles(4);
+        } else if (this.mode === 'boss') {
+            this.player1 = new CyberSnake('p1', 'YOU', currentTheme.p1, 6, 18, { x: 1, y: 0 });
+            this.player1.baseMoveInterval = baseSpeed;
+
+            this.bossSnake = new CyberSnake('boss', 'CYBER LEVIATHAN', currentTheme.p2, 28, 18, { x: -1, y: 0 }, true);
+            this.bossSnake.isBoss = true;
+            this.bossSnake.bossHealth = 120;
+            this.bossSnake.maxBossHealth = 120;
+            this.bossSnake.baseMoveInterval = baseSpeed * 1.15;
+            for (let i = 0; i < 12; i++) this.bossSnake.grow();
+
+            this.snakes.push(this.player1, this.bossSnake);
+            this.generateObstacles(4);
+            if (window.cyberAudio) window.cyberAudio.playBossAlarm();
         } else if (this.mode === 'local2p') {
             this.player1 = new CyberSnake('p1', 'PLAYER 1', currentTheme.p1, 8, 18, { x: 1, y: 0 });
             this.player2 = new CyberSnake('p2', 'PLAYER 2', currentTheme.p2, 27, 18, { x: -1, y: 0 });
@@ -480,7 +592,7 @@ class NeonSnakeGame {
         }
 
         // Spawn initial food batches
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 6; i++) {
             this.spawnFood();
         }
 
@@ -573,7 +685,6 @@ class NeonSnakeGame {
         // 1. Arena boundary check
         if (newHeadX < 0 || newHeadX >= gridWidth || newHeadY < 0 || newHeadY >= gridHeight) {
             if (isPhasing) {
-                // Wrap around when phasing
                 this.unlockAchievement('phaseWalker');
                 return true;
             } else if (!isShielded) {
@@ -648,6 +759,8 @@ class NeonSnakeGame {
 
     consumeFood(snake, food) {
         snake.grow();
+        // Also replenish 1 ammo
+        snake.ammo = Math.min(snake.maxAmmo, snake.ammo + 1);
 
         let earnedPoints = food.points;
         if (snake.multiplierTimer > 0) {
@@ -724,10 +837,145 @@ class NeonSnakeGame {
         // Briefly stun / freeze enemy snakes
         for (const s of this.snakes) {
             if (s !== sourceSnake && s.isAlive) {
-                s.moveTimer = -0.6; // Delay next step
+                s.moveTimer = -0.6;
                 window.particleEngine.addText('STUNNED', s.gridX * 20, s.gridY * 20, '#ffe600', 14);
             }
         }
+    }
+
+    updateProjectiles(dt) {
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+            const p = this.projectiles[i];
+            p.x += p.vx * dt * 60;
+            p.y += p.vy * dt * 60;
+            p.life -= dt;
+
+            // Spawn trail spark
+            if (Math.random() < 0.3) {
+                window.particleEngine.spawnTrailSparks(p.x, p.y, p.color, 1);
+            }
+
+            // Arena boundary hit
+            if (p.x < 0 || p.x > this.canvas.width || p.y < 0 || p.y > this.canvas.height || p.life <= 0) {
+                window.particleEngine.spawnBurst(p.x, p.y, p.color, 6, 2);
+                this.projectiles.splice(i, 1);
+                continue;
+            }
+
+            const gridX = Math.floor(p.x / this.cellSize);
+            const gridY = Math.floor(p.y / this.cellSize);
+
+            // Obstacle collision
+            let hitObstacle = false;
+            for (let oIdx = this.obstacles.length - 1; oIdx >= 0; oIdx--) {
+                const obs = this.obstacles[oIdx];
+                if (obs.x === gridX && obs.y === gridY) {
+                    this.obstacles.splice(oIdx, 1);
+                    window.particleEngine.spawnBurst(p.x, p.y, '#ff0055', 16, 4);
+                    window.particleEngine.addText('+20 BLAST', p.x, p.y, '#ff0055', 14);
+                    if (p.owner === this.player1) this.score += 20;
+                    this.projectiles.splice(i, 1);
+                    hitObstacle = true;
+                    if (window.cyberAudio) window.cyberAudio.playPlasmaHit();
+                    break;
+                }
+            }
+            if (hitObstacle) continue;
+
+            // Snake collision
+            let hitSnake = false;
+            for (const target of this.snakes) {
+                if (target === p.owner || !target.isAlive) continue;
+
+                for (let sIdx = 0; sIdx < target.body.length; sIdx++) {
+                    const seg = target.body[sIdx];
+                    const dist = Math.hypot(p.x - seg.pixelX, p.y - seg.pixelY);
+
+                    if (dist < this.cellSize * 0.75) {
+                        const outcome = target.takeDamage(25);
+                        window.particleEngine.spawnBurst(p.x, p.y, p.color, 20, 5);
+                        this.cameraShake = Math.max(this.cameraShake, 0.3);
+
+                        if (outcome === 'destroyed') {
+                            window.particleEngine.addText('+250 DESTROYED!', p.x, p.y, '#ff0055', 22);
+                            if (p.owner === this.player1) {
+                                this.score += 250;
+                                this.unlockAchievement('plasmaSniper');
+                                if (target === this.bossSnake) this.unlockAchievement('bossHunter');
+                            }
+                            this.checkGameOver();
+                        } else if (Array.isArray(outcome)) {
+                            // Turn sheared segments into collectible energy food bits!
+                            for (const sheared of outcome) {
+                                this.foods.push({
+                                    x: sheared.x,
+                                    y: sheared.y,
+                                    type: 'normal',
+                                    color: '#00f0ff',
+                                    points: 15,
+                                    createdAt: performance.now()
+                                });
+                            }
+                            window.particleEngine.addText('SHEARED!', p.x, p.y, '#ffe600', 16);
+                        }
+
+                        this.projectiles.splice(i, 1);
+                        hitSnake = true;
+                        break;
+                    }
+                }
+                if (hitSnake) break;
+            }
+        }
+    }
+
+    updateLaserSweepHazard(dt) {
+        // Rotating laser hazard active in solo, overclocked, and boss mode
+        if (this.mode !== 'solo' && this.mode !== 'boss' && this.difficulty !== 'overclocked') return;
+
+        this.laserSweepTimer += dt;
+        if (this.laserSweepTimer >= 14.0 && !this.laserSweepActive) {
+            this.laserSweepActive = true;
+            this.laserSweepAngle = 0;
+            window.particleEngine.addText('⚠️ LASER SWEEP ACTIVE!', this.canvas.width / 2, 60, '#ff0055', 18);
+            if (window.cyberAudio) window.cyberAudio.playBossAlarm();
+        }
+
+        if (this.laserSweepActive) {
+            this.laserSweepAngle += dt * 1.6; // rotation speed
+            const centerX = this.canvas.width / 2;
+            const centerY = this.canvas.height / 2;
+
+            // Check if any snake intersects the laser beam
+            const beamDist = this.canvas.width * 0.7;
+            const endX = centerX + Math.cos(this.laserSweepAngle) * beamDist;
+            const endY = centerY + Math.sin(this.laserSweepAngle) * beamDist;
+
+            for (const snake of this.snakes) {
+                if (!snake.isAlive || snake.phaseShiftTimer > 0 || snake.spawnShieldTimer > 0) continue;
+                for (const seg of snake.body) {
+                    const distToBeam = this.pointToSegmentDistance(seg.pixelX, seg.pixelY, centerX, centerY, endX, endY);
+                    if (distToBeam < 10) {
+                        snake.kill();
+                        this.checkGameOver();
+                        break;
+                    }
+                }
+            }
+
+            if (this.laserSweepAngle >= Math.PI * 2) {
+                this.laserSweepActive = false;
+                this.laserSweepTimer = 0;
+            }
+        }
+    }
+
+    pointToSegmentDistance(px, py, x1, y1, x2, y2) {
+        const l2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+        if (l2 === 0) return Math.hypot(px - x1, py - y1);
+        let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
+        t = Math.max(0, Math.min(1, t));
+        return Math.hypot(px - (x1 + t * (x2 - x1)), py - (y1 + t * (y2 - y1)));
     }
 
     checkGameOver() {
@@ -739,6 +987,12 @@ class NeonSnakeGame {
                 this.triggerGameOver('NEXUS ELIMINATED YOU');
             } else if (living.length === 1 && living[0] === this.player1) {
                 this.triggerGameOver('VICTORY: CYBER ARENA CONQUERED!');
+            }
+        } else if (this.mode === 'boss') {
+            if (!this.player1.isAlive) {
+                this.triggerGameOver('LEVIATHAN CRUSHED YOU');
+            } else if (this.bossSnake && !this.bossSnake.isAlive) {
+                this.triggerGameOver('🏆 LEVIATHAN SLAIN! VICTORY!');
             }
         } else if (this.mode === 'local2p') {
             const living = this.snakes.filter(s => s.isAlive);
@@ -804,6 +1058,9 @@ class NeonSnakeGame {
     update(dt) {
         if (!this.isRunning || this.isPaused) return;
 
+        // Poll Gamepad input
+        this.pollGamepad();
+
         // Camera shake decay
         if (this.cameraShake > 0) {
             this.cameraShake = Math.max(0, this.cameraShake - dt * 2.0);
@@ -831,6 +1088,12 @@ class NeonSnakeGame {
                 return this.onSnakeMoveStep(snake, nx, ny, gw, gh);
             });
         }
+
+        // Update projectiles & combat collisions
+        this.updateProjectiles(dt);
+
+        // Update Laser Sweep Hazard
+        this.updateLaserSweepHazard(dt);
 
         // Update particles and visual dust
         window.particleEngine.update(dt, this.canvas.width, this.canvas.height);
@@ -875,7 +1138,6 @@ class NeonSnakeGame {
         } else if (data.type === 'INPUT_BOOST' && window.cyberP2P.isHost && this.player2) {
             this.player2.setBoosting(data.boost);
         } else if (data.type === 'SYNC_STATE' && !window.cyberP2P.isHost) {
-            // Client receives host authoritative simulation
             this.foods = data.foods;
             this.obstacles = data.obstacles;
             for (const sData of data.snakes) {
@@ -926,19 +1188,87 @@ class NeonSnakeGame {
         // 2. Draw Synthwave Neon Perspective Grid
         this.drawCyberGrid(ctx, w, h, currentTheme);
 
-        // 3. Draw Obstacles (Neon Data Barriers)
+        // 3. Draw Laser Sweep Hazard if active
+        this.drawLaserSweepHazard(ctx, w, h);
+
+        // 4. Draw Obstacles (Neon Data Barriers)
         this.drawObstacles(ctx);
 
-        // 4. Draw Foods & Powerups
+        // 5. Draw Foods & Powerups
         this.drawFoods(ctx);
 
-        // 5. Draw Snakes
+        // 6. Draw Snakes
         for (const s of this.snakes) {
             s.draw(ctx, this.cellSize);
         }
 
-        // 6. Draw Particles & Overlays
+        // 7. Draw Plasma Projectiles
+        this.drawProjectiles(ctx);
+
+        // 8. Draw Particles & Overlays
         window.particleEngine.draw(ctx, w, h);
+
+        ctx.restore();
+    }
+
+    drawProjectiles(ctx) {
+        ctx.save();
+        for (const p of this.projectiles) {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = p.color;
+            ctx.fillStyle = '#ffffff';
+
+            // Plasma bolt capsule
+            const angle = Math.atan2(p.vy, p.vx);
+            ctx.rotate(angle);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-8, -3, 16, 6);
+
+            // Core white hot line
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(-6, -1, 12, 2);
+
+            ctx.restore();
+        }
+        ctx.restore();
+    }
+
+    drawLaserSweepHazard(ctx, w, h) {
+        if (!this.laserSweepActive) return;
+        const cx = w / 2;
+        const cy = h / 2;
+        const beamDist = w * 0.7;
+        const endX = cx + Math.cos(this.laserSweepAngle) * beamDist;
+        const endY = cy + Math.sin(this.laserSweepAngle) * beamDist;
+
+        ctx.save();
+        // Turret core
+        ctx.beginPath();
+        ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+        ctx.fillStyle = '#ff0055';
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#ff0055';
+        ctx.fill();
+
+        // Laser beam
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(endX, endY);
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#ff0055';
+        ctx.shadowBlur = 25;
+        ctx.shadowColor = '#ff0055';
+        ctx.stroke();
+
+        // Inner beam
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(endX, endY);
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
 
         ctx.restore();
     }
@@ -1077,10 +1407,13 @@ class NeonSnakeGame {
                 boostBar.classList.toggle('depleted', this.player1.boostEnergy < 15);
             }
 
-            // Power-up badge display
+            // Power-up badge & ammo display
             const badgeContainer = document.getElementById('activePowerups');
             if (badgeContainer) {
                 let badges = '';
+                // Ammo pips
+                badges += `<span class="badge ammo">⚡ ${this.player1.ammo}/${this.player1.maxAmmo}</span>`;
+
                 if (this.player1.phaseShiftTimer > 0) {
                     badges += `<span class="badge phase">PHASE (${Math.ceil(this.player1.phaseShiftTimer)}s)</span>`;
                 }

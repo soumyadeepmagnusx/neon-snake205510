@@ -474,6 +474,68 @@ class CyberAudioEngine {
         osc.start(now);
         osc.stop(now + 0.04);
     }
+
+    playLaser() {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.exponentialRampToValueAtTime(110, now + 0.12);
+
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+
+        osc.start(now);
+        osc.stop(now + 0.12);
+    }
+
+    playPlasmaHit() {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(80, now + 0.08);
+
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+
+        osc.start(now);
+        osc.stop(now + 0.08);
+    }
+
+    playBossAlarm() {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+        for (let i = 0; i < 2; i++) {
+            const time = now + i * 0.18;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(440, time);
+            osc.frequency.linearRampToValueAtTime(880, time + 0.12);
+            gain.gain.setValueAtTime(0.3, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+            osc.start(time);
+            osc.stop(time + 0.15);
+        }
+    }
 }
 
 window.cyberAudio = new CyberAudioEngine();

@@ -323,6 +323,12 @@ canvas {
     color: var(--neon-gold);
 }
 
+.badge.ammo {
+    background: rgba(0, 240, 255, 0.25);
+    border: 1px solid var(--neon-cyan);
+    color: #fff;
+}
+
 @keyframes badgePulse {
     from { opacity: 0.7; }
     to { opacity: 1; }
@@ -548,23 +554,46 @@ canvas {
 .d-pad-right { grid-column: 3; grid-row: 2; }
 .d-pad-down { grid-column: 2; grid-row: 3; }
 
-.touch-boost-btn {
-    width: 90px;
-    height: 90px;
+.mobile-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.touch-btn {
+    width: 68px;
+    height: 68px;
     border-radius: 50%;
     font-family: 'Orbitron', monospace;
     font-weight: 900;
-    font-size: 14px;
+    font-size: 11px;
     color: #fff;
-    border: 2px solid var(--neon-magenta);
-    background: rgba(255, 0, 127, 0.2);
-    box-shadow: 0 0 15px var(--neon-magenta);
     cursor: pointer;
+    transition: transform 0.1s ease;
 }
 
-.touch-boost-btn:active {
+.touch-btn:active {
+    transform: scale(0.92);
+}
+
+.touch-btn.fire-btn {
+    border: 2px solid #ff0055;
+    background: rgba(255, 0, 85, 0.25);
+    box-shadow: 0 0 14px #ff0055;
+}
+
+.touch-btn.fire-btn:active {
+    background: #ff0055;
+}
+
+.touch-btn.boost-btn {
+    border: 2px solid var(--neon-magenta);
+    background: rgba(255, 0, 127, 0.25);
+    box-shadow: 0 0 14px var(--neon-magenta);
+}
+
+.touch-btn.boost-btn:active {
     background: var(--neon-magenta);
-    transform: scale(0.95);
 }
 
 @media (max-width: 768px) {

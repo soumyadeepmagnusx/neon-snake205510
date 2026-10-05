@@ -36,9 +36,57 @@ class CyberSnake {
         this.multiplierTimer = 0;
         this.spawnShieldTimer = 2.5; // brief invulnerability at start
 
+        // Combat & Weaponry
+        this.ammo = 5;
+        this.maxAmmo = 5;
+        this.ammoCooldown = 0;
+        this.isBoss = false;
+        this.bossHealth = 100;
+        this.maxBossHealth = 100;
+
         // Movement Timing
         this.baseMoveInterval = 0.11; // base seconds per grid step
         this.moveTimer = 0;
+    }
+
+    shootPlasma() {
+        if (this.ammo <= 0 || this.ammoCooldown > 0 || !this.isAlive) return null;
+        this.ammo--;
+        this.ammoCooldown = 0.22;
+        if (window.cyberAudio) window.cyberAudio.playLaser();
+        
+        return {
+            x: this.body[0].pixelX,
+            y: this.body[0].pixelY,
+            vx: this.dir.x * 12,
+            vy: this.dir.y * 12,
+            color: this.colorScheme.glow,
+            owner: this,
+            life: 1.2
+        };
+    }
+
+    takeDamage(amount = 25) {
+        if (this.spawnShieldTimer > 0 || this.empShieldTimer > 0) return false;
+        if (window.cyberAudio) window.cyberAudio.playPlasmaHit();
+
+        if (this.isBoss) {
+            this.bossHealth -= amount;
+            if (this.bossHealth <= 0) {
+                this.kill();
+                return 'destroyed';
+            }
+            return 'damaged';
+        } else {
+            // Shear 2 tail segments off
+            if (this.body.length > 3) {
+                const sheared = this.body.splice(this.body.length - 2, 2);
+                return sheared;
+            } else {
+                this.kill();
+                return 'destroyed';
+            }
+        }
     }
 
     setDirection(dx, dy) {
@@ -68,6 +116,16 @@ class CyberSnake {
         if (this.empShieldTimer > 0) this.empShieldTimer -= dt;
         if (this.multiplierTimer > 0) this.multiplierTimer -= dt;
         if (this.spawnShieldTimer > 0) this.spawnShieldTimer -= dt;
+
+        // Weapon & Ammo Cooldown
+        if (this.ammoCooldown > 0) this.ammoCooldown -= dt;
+        if (this.ammo < this.maxAmmo) {
+            this.ammoRechargeTimer = (this.ammoRechargeTimer || 0) + dt;
+            if (this.ammoRechargeTimer >= 2.2) {
+                this.ammoRechargeTimer = 0;
+                this.ammo = Math.min(this.maxAmmo, this.ammo + 1);
+            }
+        }
 
         // Boost Energy Management
         if (this.isBoosting) {
@@ -268,6 +326,32 @@ class CyberSnake {
             ctx.shadowColor = '#ffe600';
             ctx.setLineDash([6, 4]);
             ctx.stroke();
+            ctx.restore();
+        }
+
+        // Draw Boss Health Bar above head
+        if (this.isBoss && this.body.length > 0) {
+            const head = this.body[0];
+            ctx.save();
+            ctx.translate(head.pixelX, head.pixelY - cellSize * 1.6);
+            ctx.font = "900 11px 'Orbitron', monospace";
+            ctx.fillStyle = '#ff0055';
+            ctx.textAlign = 'center';
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#ff0055';
+            ctx.fillText(`⚡ ${this.name} [BOSS]`, 0, -6);
+
+            // Bar background
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.strokeStyle = '#ff0055';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(-40, 0, 80, 8);
+            ctx.fillRect(-40, 0, 80, 8);
+
+            // Health fill
+            const pct = Math.max(0, this.bossHealth / this.maxBossHealth);
+            ctx.fillStyle = '#ff0055';
+            ctx.fillRect(-40, 0, 80 * pct, 8);
             ctx.restore();
         }
 

@@ -24,45 +24,46 @@ A high-octane synthwave & cyberpunk canvas arcade game built with vanilla JavaSc
   - Dynamic frequency visualizer spectrum rendered across the canvas background.
   - Procedural sound effects: food chime, turbo boost thrust roar, explosion impact, EMP shockwave, and phase warp tone.
 
-- **4 Game Modes**:
+- **5 Intense Game Modes**:
   1. **⚡ Solo Cyber Run**: High-score survival against randomized laser barriers and escalating speeds.
-  2. **🤖 Bot Battle Royale**: Arena deathmatch against AI snakes (*AI-Nexus* & *AI-Viper*) powered by open-space flood-fill heuristics and threat avoidance.
-  3. **👥 Local 2-Player Versus**: Split keyboard duel on a single display (`WASD + Space` vs `Arrows + Enter`).
-  4. **🌐 P2P Online Duel**: Zero-lag peer-to-peer multiplayer powered by WebRTC DataChannels (PeerJS). Instant 4-letter room code invite!
+  2. **🤖 Bot Battle Royale**: Arena deathmatch against AI snakes (*AI-Nexus* & *AI-Viper*) armed with plasma cannons and threat-evasion brains.
+  3. **🐉 Boss Raid (Leviathan)**: Confront the armored *Cyber Leviathan*—a 16-segment behemoth with 120 HP, laser attacks, and boss health bars.
+  4. **👥 Local 2-Player Versus**: Split keyboard duel on a single display (`WASD + Space + F` vs `Arrows + Enter + L`).
+  5. **🌐 P2P Online Duel**: Zero-lag peer-to-peer multiplayer powered by WebRTC DataChannels (PeerJS). Instant 4-letter room code invite!
 
-- **Cyber Power-Ups & Mechanics**:
+- **Cyber Combat & Power-Ups**:
+  - **⚡ Plasma Cannon**: Press `F` / `J` to shoot high-velocity plasma bolts that shatter obstacles and shear enemy snake segments into collectible food bits!
+  - **⚠️ Rotating Laser Sweep**: Central arena death beams that activate periodically and sweep 360° across the grid.
   - **Turbo Overdrive**: Hold `Space` / `Shift` for a 2x speed burst leaving burning neon thermal trails.
-  - **Neon Energy Core (Cyan)**: Base energy (+10 pts, grows body, restores boost energy).
+  - **Neon Energy Core (Cyan)**: Base energy (+10 pts, grows body, restores ammo and boost).
   - **Overdrive Core (Lime)**: Instantly recharges boost meter to 100% + gives temporary invulnerability.
-  - **Phase Matrix (Purple)**: Ghost phase through lethal walls and snake bodies for 6 seconds.
+  - **Phase Matrix (Purple)**: Ghost phase through lethal walls, lasers, and snake bodies for 6 seconds.
   - **EMP Shockwave (Yellow)**: Detonates an EMP ring clearing nearby obstacles and stunning enemy snakes.
   - **Multiplier Matrix (Orange)**: 3x score multiplier bonus.
 
 - **Hall of Fame & Achievements**:
   - Persistent local leaderboard saving top scores, dates, and custom player handles.
-  - In-game achievements toast system (Speed Demon, Ghost in the Net, Grid Blackout, Nexus Breaker, Century Mark).
+  - In-game achievements toast system (Speed Demon, Ghost in the Net, Grid Blackout, Nexus Breaker, Plasma Deadeye, Leviathan Down, Century Mark).
 
 - **Difficulty Settings**:
   - **Casual**: Relaxed speed and forgiving boundaries.
   - **Arcade**: Balanced retro arcade difficulty.
-  - **Overclocked**: High-speed adrenaline rush for pro reflex gamers.
+  - **Overclocked**: High-speed adrenaline rush for pro reflex gamers with active laser hazards.
 
-- **Responsive & Mobile Ready**:
-  - Virtual on-screen D-pad and Turbo Boost button for mobile and tablet touchscreens.
-  - Auto-scaling canvas that preserves aspect ratio on all screen sizes.
+- **Controller & Touch Ready**:
+  - Full native **HTML5 Gamepad API** integration with vibration/rumble support (Xbox, PlayStation, Bluetooth controllers).
+  - Virtual on-screen D-pad and dedicated **FIRE** & **TURBO** action buttons for mobile touchscreens.
 
 ---
 
 ## 🕹️ Controls Guide
 
-| Action | Player 1 (Desktop) | Player 2 (Local 2P) | Mobile / Touch |
-| :--- | :--- | :--- | :--- |
-| **Move Up** | `W` or `Up Arrow` | `Up Arrow` | `▲` D-Pad Button |
-| **Move Down** | `S` or `Down Arrow` | `Down Arrow` | `▼` D-Pad Button |
-| **Move Left** | `A` or `Left Arrow` | `Left Arrow` | `◀` D-Pad Button |
-| **Move Right** | `D` or `Right Arrow` | `Right Arrow` | `▶` D-Pad Button |
-| **Turbo Overdrive** | `Space` or `Left Shift` | `Enter` or `Right Ctrl` | `TURBO` Circle Button |
-| **Pause / Resume** | `P` or `Escape` | `P` or `Escape` | Tap anywhere |
+| Action | Player 1 (Desktop) | Player 2 (Local 2P) | Gamepad (Controller) | Mobile / Touch |
+| :--- | :--- | :--- | :--- | :--- |
+| **Move** | `WASD` or `Arrow Keys` | `Arrow Keys` | Left Stick / D-Pad | `▲ ◀ ▼ ▶` D-Pad |
+| **Turbo Overdrive** | `Space` or `Left Shift` | `Enter` or `Right Ctrl` | `A` Button / `RT` | `TURBO` Button |
+| **Shoot Plasma Cannon** | `F` or `J` | `L` or `Numpad 0` | `X` Button / `RB` | `FIRE` Button |
+| **Pause / Resume** | `P` or `Escape` | `P` or `Escape` | `Start` Button | Tap anywhere |
 
 ---
 

@@ -124,6 +124,24 @@ class CyberAiController {
         } else if (snake.boostEnergy < 20 || minTargetDist > 8) {
             snake.setBoosting(false);
         }
+
+        // Combat Firing Decision: Shoot if an enemy snake is directly ahead in line-of-sight
+        if (snake.ammo > 0 && Math.random() < 0.25 && window.game) {
+            for (const other of allSnakes) {
+                if (other === snake || !other.isAlive) continue;
+                for (const seg of other.body) {
+                    const dx = seg.x - headX;
+                    const dy = seg.y - headY;
+                    const isAhead = (snake.dir.x !== 0 && Math.sign(dx) === snake.dir.x && dy === 0 && Math.abs(dx) <= 9) ||
+                                    (snake.dir.y !== 0 && Math.sign(dy) === snake.dir.y && dx === 0 && Math.abs(dy) <= 9);
+                    if (isAhead) {
+                        const proj = snake.shootPlasma();
+                        if (proj) window.game.projectiles.push(proj);
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     /**

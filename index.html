@@ -51,7 +51,7 @@
 
             <div class="boost-container">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span class="hud-label">BOOST</span>
+                    <span class="hud-label">ENERGY / AMMO</span>
                     <div id="activePowerups" class="powerup-badges"></div>
                 </div>
                 <div class="boost-bar-bg">
@@ -71,13 +71,14 @@
                 <div class="modal-card">
                     <h2 class="modal-title">NEONSNAKE 2077</h2>
                     <p id="modeInstructions" class="modal-subtitle">
-                        SURVIVAL MODE: Dodge laser obstacles, gather cyber cores, unleash turbo overdrive!
+                        SURVIVAL MODE: Dodge laser obstacles & rotating sweep rays, gather cyber cores, fire plasma cannon [F]!
                     </p>
 
                     <!-- Game Mode Selection -->
                     <div class="mode-selector">
                         <button class="cyber-btn mode-btn active" data-mode="solo">⚡ SOLO RUN</button>
                         <button class="cyber-btn mode-btn" data-mode="bots">🤖 BOT BATTLE</button>
+                        <button class="cyber-btn mode-btn" data-mode="boss">🐉 BOSS RAID</button>
                         <button class="cyber-btn mode-btn" data-mode="local2p">👥 LOCAL 2P</button>
                         <button class="cyber-btn mode-btn magenta" data-mode="online">🌐 P2P ONLINE</button>
                     </div>
@@ -122,8 +123,9 @@
 
                     <div class="controls-guide">
                         <span><span class="key-tag">WASD / ARROWS</span> Move</span>
-                        <span><span class="key-tag">SPACE / SHIFT</span> Turbo Boost</span>
-                        <span><span class="key-tag">P / ESC</span> Pause</span>
+                        <span><span class="key-tag">SPACE / SHIFT</span> Turbo</span>
+                        <span><span class="key-tag">F / J</span> Cannon</span>
+                        <span><span class="key-tag">GAMEPAD</span> Ready</span>
                     </div>
                 </div>
             </div>
@@ -181,7 +183,10 @@
                 <button id="touchRight" class="cyber-btn d-pad-right">▶</button>
                 <button id="touchDown" class="cyber-btn d-pad-down">▼</button>
             </div>
-            <button id="touchBoost" class="touch-boost-btn">TURBO</button>
+            <div class="mobile-actions">
+                <button id="touchFire" class="touch-btn fire-btn">FIRE</button>
+                <button id="touchBoost" class="touch-btn boost-btn">TURBO</button>
+            </div>
         </div>
 
     </main>
