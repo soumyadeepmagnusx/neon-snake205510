@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEONSNAKE 2077 // Cyberpunk Canvas Arcade</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- PeerJS for WebRTC Peer-to-Peer Multiplayer -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body class="theme-neon2077">
+
+    <!-- CRT Scanline & Screen Vignette Overlay -->
+    <div id="crtOverlay" class="crt-overlay"></div>
+
+    <!-- Achievement Toast Notification -->
+    <div id="achievementToast" class="achievement-toast"></div>
+
+    <!-- Header Navigation & Visual Controls -->
+    <header>
+        <div class="logo">
+            <h1>NEONSNAKE</h1>
+            <span class="year">2077</span>
+        </div>
+        <div class="header-actions">
+            <button id="leaderboardBtn" class="cyber-btn" title="Hall of Fame">🏆 HALL OF FAME</button>
+            <button id="crtToggleBtn" class="cyber-btn active" title="Toggle CRT Scanline Shader">CRT ON</button>
+            <button id="audioToggleBtn" class="cyber-btn magenta" title="Toggle Synthwave Audio">🔊 SOUND ON</button>
+        </div>
+    </header>
+
+    <!-- Main Game Container -->
+    <main class="game-container">
+
+        <!-- Cyberpunk HUD Bar -->
+        <div class="hud-bar">
+            <div class="hud-stat">
+                <span class="hud-label">SCORE</span>
+                <span id="scoreDisplay" class="hud-value cyan">0</span>
+            </div>
+
+            <div class="hud-stat">
+                <span class="hud-label">HIGH SCORE</span>
+                <span id="highScoreDisplay" class="hud-value gold">0</span>
+            </div>
+
+            <div class="hud-stat">
+                <span class="hud-label">COMBO</span>
+                <span id="comboDisplay" class="hud-value magenta">x1</span>
+            </div>
+
+            <div class="boost-container">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span class="hud-label">BOOST</span>
+                    <div id="activePowerups" class="powerup-badges"></div>
+                </div>
+                <div class="boost-bar-bg">
+                    <div id="boostFill" class="boost-fill"></div>
+                </div>
+            </div>
+
+            <span id="fpsCounter" style="font-family: monospace; font-size: 11px; color: #718096;">60 FPS</span>
+        </div>
+
+        <!-- Canvas Game Arena Viewport -->
+        <div class="canvas-wrapper">
+            <canvas id="gameCanvas"></canvas>
+
+            <!-- Start / Mode Selection Modal -->
+            <div id="startModal" class="modal-overlay">
+                <div class="modal-card">
+                    <h2 class="modal-title">NEONSNAKE 2077</h2>
+                    <p id="modeInstructions" class="modal-subtitle">
+                        SURVIVAL MODE: Dodge laser obstacles, gather cyber cores, unleash turbo overdrive!
+                    </p>
+
+                    <!-- Game Mode Selection -->
+                    <div class="mode-selector">
+                        <button class="cyber-btn mode-btn active" data-mode="solo">⚡ SOLO RUN</button>
+                        <button class="cyber-btn mode-btn" data-mode="bots">🤖 BOT BATTLE</button>
+                        <button class="cyber-btn mode-btn" data-mode="local2p">👥 LOCAL 2P</button>
+                        <button class="cyber-btn mode-btn magenta" data-mode="online">🌐 P2P ONLINE</button>
+                    </div>
+
+                    <!-- Config Selectors: Theme & Difficulty -->
+                    <div class="config-bar">
+                        <div class="config-group">
+                            <label class="config-label">THEME</label>
+                            <select id="themeSelect" class="cyber-select">
+                                <option value="neon2077">NEON 2077</option>
+                                <option value="outrun">OUTRUN SUNSET</option>
+                                <option value="matrix">MATRIX ACID</option>
+                                <option value="cyberpunk">ELECTRIC GOLD</option>
+                            </select>
+                        </div>
+                        <div class="config-group">
+                            <label class="config-label">DIFFICULTY</label>
+                            <select id="difficultySelect" class="cyber-select">
+                                <option value="casual">CASUAL</option>
+                                <option value="arcade" selected>ARCADE</option>
+                                <option value="overclocked">OVERCLOCKED</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- P2P Online Lobby Box -->
+                    <div id="p2pLobby" class="p2p-panel">
+                        <p style="font-size: 12px; color: #a0aec0;">Direct WebRTC DataChannel connection with zero server lag.</p>
+                        <div style="display: flex; gap: 8px; margin-top: 8px;">
+                            <button id="p2pHostBtn" class="cyber-btn" style="flex: 1;">CREATE ROOM</button>
+                        </div>
+                        <div class="p2p-inputs">
+                            <input id="p2pRoomInput" class="cyber-input" type="text" placeholder="ROOM CODE (e.g. NEON-X4)" maxlength="8">
+                            <button id="p2pJoinBtn" class="cyber-btn magenta">JOIN</button>
+                        </div>
+                        <div id="p2pStatus" class="p2p-status">Ready to connect...</div>
+                    </div>
+
+                    <button id="startBtn" class="cyber-btn magenta" style="width: 100%; padding: 12px; font-size: 15px; margin-top: 14px;">
+                        INITIALIZE CYBER GRID
+                    </button>
+
+                    <div class="controls-guide">
+                        <span><span class="key-tag">WASD / ARROWS</span> Move</span>
+                        <span><span class="key-tag">SPACE / SHIFT</span> Turbo Boost</span>
+                        <span><span class="key-tag">P / ESC</span> Pause</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Over Modal -->
+            <div id="gameOverModal" class="modal-overlay" style="display: none;">
+                <div class="modal-card">
+                    <h2 id="gameOverTitle" class="modal-title" style="color: #ff0055; text-shadow: 0 0 16px #ff0055;">
+                        SYSTEM TERMINATED
+                    </h2>
+                    <p id="finalScore" class="modal-subtitle" style="font-size: 18px; color: var(--neon-cyan); font-family: 'Orbitron'; font-weight: 700;">
+                        FINAL SCORE: 0
+                    </p>
+
+                    <div style="margin: 12px 0 18px 0;">
+                        <label style="font-size: 11px; color: #a0aec0; letter-spacing: 1px; display: block; margin-bottom: 4px;">RECORD CYBER TAG:</label>
+                        <input id="playerHandleInput" class="cyber-input" type="text" placeholder="YOUR CALLSIGN" maxlength="10" value="RUNNER_01">
+                    </div>
+
+                    <button id="restartBtn" class="cyber-btn magenta" style="width: 100%; padding: 12px; font-size: 15px;">
+                        REBOOT & SAVE SCORE
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pause Modal -->
+            <div id="pauseModal" class="modal-overlay" style="display: none;">
+                <div class="modal-card">
+                    <h2 class="modal-title">GRID PAUSED</h2>
+                    <p class="modal-subtitle">Neural uplink suspended.</p>
+                    <button id="resumeBtn" class="cyber-btn" style="width: 100%; padding: 12px; font-size: 15px;">
+                        RESUME STREAM
+                    </button>
+                </div>
+            </div>
+
+            <!-- Hall of Fame / Leaderboard Modal -->
+            <div id="leaderboardModal" class="modal-overlay" style="display: none;">
+                <div class="modal-card" style="max-width: 420px;">
+                    <h2 class="modal-title">🏆 HALL OF FAME</h2>
+                    <div id="leaderboardList" class="leaderboard-list"></div>
+                    <button id="closeLeaderboardBtn" class="cyber-btn" style="width: 100%; margin-top: 16px;">
+                        CLOSE ARCHIVES
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Virtual Touch Controls for Mobile / Tablets -->
+        <div class="mobile-controls">
+            <div class="d-pad">
+                <button id="touchUp" class="cyber-btn d-pad-up">▲</button>
+                <button id="touchLeft" class="cyber-btn d-pad-left">◀</button>
+                <button id="touchRight" class="cyber-btn d-pad-right">▶</button>
+                <button id="touchDown" class="cyber-btn d-pad-down">▼</button>
+            </div>
+            <button id="touchBoost" class="touch-boost-btn">TURBO</button>
+        </div>
+
+    </main>
+
+    <!-- Game Engine Scripts -->
+    <script src="audio.js"></script>
+    <script src="particles.js"></script>
+    <script src="snake.js"></script>
+    <script src="ai.js"></script>
+    <script src="p2p.js"></script>
+    <script src="game.js"></script>
+
+</body>
+</html>
