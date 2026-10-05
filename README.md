@@ -24,6 +24,13 @@ A high-octane synthwave & cyberpunk canvas arcade game built with vanilla JavaSc
   - Dynamic frequency visualizer spectrum rendered across the canvas background.
   - Procedural sound effects: food chime, turbo boost thrust roar, explosion impact, EMP shockwave, and phase warp tone.
 
+- **Advanced Cyber Systems**:
+  - **🛰️ Holographic Tactical Radar**: Real-time minimap radar tracking food clusters, rival snake vectors, boss movements, and laser sweeps.
+  - **👻 Ghost Time-Trial Racer**: Automatically records your personal best solo run and plays it back as a neon shadow snake so you can race against your own record!
+  - **⚡ Dynamic Grid Anomalies**: Random cosmic cyber weather events (*Solar Overcharge* with 2x score, *EMP Storm* clearing all barriers, *Neon Eclipse* stealth mode).
+  - **⏱️ Slow-Mo Bullet-Time Death Cam**: High-impact time dilation (`0.22x` speed) on crashes with chromatic screen shudder.
+  - **🎵 Multi-Track Procedural Jukebox**: Switch between 3 synthwave compositions (*Cyber City 2077* [124 BPM], *Outrun Sunset* [114 BPM], *Hyperdrive* [140 BPM]).
+
 - **5 Intense Game Modes**:
   1. **⚡ Solo Cyber Run**: High-score survival against randomized laser barriers and escalating speeds.
   2. **🤖 Bot Battle Royale**: Arena deathmatch against AI snakes (*AI-Nexus* & *AI-Viper*) armed with plasma cannons and threat-evasion brains.

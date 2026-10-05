@@ -50,6 +50,21 @@ class NeonSnakeGame {
         this.gamepadConnected = false;
         this.gamepadLastButtons = {};
 
+        // Advanced Systems: Tactical Radar, Ghost Time-Trial, Cyber Anomalies, Death-Cam
+        this.radarEnabled = true;
+        this.ghostEnabled = true;
+        this.currentRunRecord = [];
+        this.bestRunRecord = JSON.parse(localStorage.getItem('neonSnake_bestRunReplay') || 'null');
+        this.ghostStep = 0;
+
+        this.activeAnomaly = null; // null, 'SOLAR_OVERCHARGE', 'EMP_STORM', 'NEON_ECLIPSE'
+        this.anomalyTimer = 0;
+        this.anomalyDuration = 0;
+
+        this.deathCamActive = false;
+        this.deathCamTimer = 0;
+        this.timeDilation = 1.0;
+
         // Color palettes for themes
         this.themes = {
             neon2077: {
@@ -438,6 +453,29 @@ class NeonSnakeGame {
             });
         }
 
+        // Procedural Track Switcher
+        const trackBtn = document.getElementById('trackToggleBtn');
+        if (trackBtn) {
+            trackBtn.addEventListener('click', () => {
+                if (window.cyberAudio) {
+                    const nextTrk = window.cyberAudio.nextTrack();
+                    trackBtn.innerText = `🎵 ${nextTrk.name.split(' ')[0]}`;
+                    window.particleEngine.addText(`TRACK: ${nextTrk.name}`, this.canvas.width / 2, 80, '#00f0ff', 15);
+                }
+            });
+        }
+
+        // Radar Minimap Toggle
+        const radarBtn = document.getElementById('radarToggleBtn');
+        if (radarBtn) {
+            radarBtn.addEventListener('click', () => {
+                this.radarEnabled = !this.radarEnabled;
+                radarBtn.classList.toggle('active', this.radarEnabled);
+                radarBtn.innerText = this.radarEnabled ? 'RADAR ON' : 'RADAR OFF';
+                if (window.cyberAudio) window.cyberAudio.playClick();
+            });
+        }
+
         // Virtual Touch Controls for Mobile
         this.setupTouchControls();
     }
@@ -531,6 +569,12 @@ class NeonSnakeGame {
         this.laserSweepTimer = 0;
         this.laserSweepActive = false;
         this.laserSweepAngle = 0;
+        this.currentRunRecord = [];
+        this.ghostStep = 0;
+        this.activeAnomaly = null;
+        this.anomalyTimer = 0;
+        this.deathCamActive = false;
+        this.timeDilation = 1.0;
         window.particleEngine.clear();
 
         // Speed interval based on difficulty
@@ -979,34 +1023,66 @@ class NeonSnakeGame {
     }
 
     checkGameOver() {
+        if (this.deathCamActive) return;
+
+        let isOver = false;
+        let msg = '';
+
         if (this.mode === 'solo' && this.player1 && !this.player1.isAlive) {
-            this.triggerGameOver('CYBER CRASH: SYSTEM TERMINATED');
+            isOver = true;
+            msg = 'CYBER CRASH: SYSTEM TERMINATED';
         } else if (this.mode === 'bots') {
             const living = this.snakes.filter(s => s.isAlive);
             if (!this.player1.isAlive) {
-                this.triggerGameOver('NEXUS ELIMINATED YOU');
+                isOver = true;
+                msg = 'NEXUS ELIMINATED YOU';
             } else if (living.length === 1 && living[0] === this.player1) {
-                this.triggerGameOver('VICTORY: CYBER ARENA CONQUERED!');
+                isOver = true;
+                msg = 'VICTORY: CYBER ARENA CONQUERED!';
             }
         } else if (this.mode === 'boss') {
             if (!this.player1.isAlive) {
-                this.triggerGameOver('LEVIATHAN CRUSHED YOU');
+                isOver = true;
+                msg = 'LEVIATHAN CRUSHED YOU';
             } else if (this.bossSnake && !this.bossSnake.isAlive) {
-                this.triggerGameOver('🏆 LEVIATHAN SLAIN! VICTORY!');
+                isOver = true;
+                msg = '🏆 LEVIATHAN SLAIN! VICTORY!';
             }
         } else if (this.mode === 'local2p') {
             const living = this.snakes.filter(s => s.isAlive);
             if (living.length <= 1) {
-                const winner = living.length === 1 ? living[0].name : 'DRAW';
-                this.triggerGameOver(`${winner} DOMINATES THE GRID!`);
+                isOver = true;
+                msg = living.length === 1 ? `${living[0].name} DOMINATES THE GRID!` : 'DRAW';
             }
         } else if (this.mode === 'online') {
             const living = this.snakes.filter(s => s.isAlive);
             if (living.length <= 1) {
-                const winner = living.length === 1 ? living[0].name : 'DRAW';
-                this.triggerGameOver(`${winner} WINS DUEL!`);
+                isOver = true;
+                msg = living.length === 1 ? `${living[0].name} WINS DUEL!` : 'DRAW';
             }
         }
+
+        if (isOver) {
+            this.triggerDeathCam(msg);
+        }
+    }
+
+    triggerDeathCam(msg) {
+        this.deathCamActive = true;
+        this.deathCamTimer = 1.3;
+        this.cameraShake = 0.6;
+        window.particleEngine.addText('// CRITICAL FATALITY //', this.canvas.width / 2, this.canvas.height / 2, '#ff0055', 24);
+
+        // Record high score ghost run in solo
+        if (this.mode === 'solo' && this.score >= this.highScore && this.currentRunRecord.length > 20) {
+            this.bestRunRecord = this.currentRunRecord;
+            localStorage.setItem('neonSnake_bestRunReplay', JSON.stringify(this.bestRunRecord));
+        }
+
+        setTimeout(() => {
+            this.deathCamActive = false;
+            this.triggerGameOver(msg);
+        }, 1300);
     }
 
     triggerGameOver(msg) {
@@ -1058,8 +1134,25 @@ class NeonSnakeGame {
     update(dt) {
         if (!this.isRunning || this.isPaused) return;
 
+        // Bullet-Time Dilation on Fatality / Death Cam
+        if (this.deathCamActive) {
+            dt *= 0.22;
+        }
+
         // Poll Gamepad input
         this.pollGamepad();
+
+        // Update Cyber Grid Anomalies (Solar Flare, EMP Storm, Neon Eclipse)
+        this.updateCyberAnomalies(dt);
+
+        // Record solo run frame for Ghost Time-Trial Racer
+        if (this.mode === 'solo' && this.player1 && this.player1.isAlive && !this.deathCamActive) {
+            this.currentRunRecord.push({
+                x: this.player1.gridX,
+                y: this.player1.gridY,
+                body: this.player1.body.map(b => ({ px: b.pixelX, py: b.pixelY }))
+            });
+        }
 
         // Camera shake decay
         if (this.cameraShake > 0) {
@@ -1188,24 +1281,33 @@ class NeonSnakeGame {
         // 2. Draw Synthwave Neon Perspective Grid
         this.drawCyberGrid(ctx, w, h, currentTheme);
 
-        // 3. Draw Laser Sweep Hazard if active
+        // 3. Draw Cyber Grid Anomaly Overlays (Solar Flare / Neon Eclipse)
+        this.drawCyberAnomalies(ctx, w, h);
+
+        // 4. Draw Ghost Time-Trial Shadow Racer
+        this.drawGhostRacer(ctx);
+
+        // 5. Draw Laser Sweep Hazard if active
         this.drawLaserSweepHazard(ctx, w, h);
 
-        // 4. Draw Obstacles (Neon Data Barriers)
+        // 6. Draw Obstacles (Neon Data Barriers)
         this.drawObstacles(ctx);
 
-        // 5. Draw Foods & Powerups
+        // 7. Draw Foods & Powerups
         this.drawFoods(ctx);
 
-        // 6. Draw Snakes
+        // 8. Draw Snakes
         for (const s of this.snakes) {
             s.draw(ctx, this.cellSize);
         }
 
-        // 7. Draw Plasma Projectiles
+        // 9. Draw Plasma Projectiles
         this.drawProjectiles(ctx);
 
-        // 8. Draw Particles & Overlays
+        // 10. Draw Holographic Tactical Radar / Minimap
+        this.drawTacticalRadar(ctx);
+
+        // 11. Draw Particles & Overlays
         window.particleEngine.draw(ctx, w, h);
 
         ctx.restore();
@@ -1292,6 +1394,135 @@ class NeonSnakeGame {
             ctx.fillStyle = `rgba(0, 240, 255, ${alpha})`;
             ctx.fillRect(x + 1, y, barWidth - 2, barHeight);
         }
+        ctx.restore();
+    }
+
+    updateCyberAnomalies(dt) {
+        this.anomalyTimer += dt;
+        if (!this.activeAnomaly && this.anomalyTimer >= 20.0) {
+            this.anomalyTimer = 0;
+            const events = ['SOLAR_OVERCHARGE', 'EMP_STORM', 'NEON_ECLIPSE'];
+            this.activeAnomaly = events[Math.floor(Math.random() * events.length)];
+            this.anomalyDuration = 8.5;
+            window.particleEngine.addText(`⚠️ ANOMALY: ${this.activeAnomaly.replace('_', ' ')}`, this.canvas.width / 2, 80, '#ffe600', 16);
+            if (window.cyberAudio) window.cyberAudio.playPowerup();
+
+            if (this.activeAnomaly === 'EMP_STORM') {
+                this.obstacles = [];
+                for (let i = 0; i < 4; i++) this.spawnFood();
+            }
+        }
+
+        if (this.activeAnomaly) {
+            this.anomalyDuration -= dt;
+            if (this.anomalyDuration <= 0) {
+                this.activeAnomaly = null;
+            }
+        }
+    }
+
+    drawCyberAnomalies(ctx, w, h) {
+        if (!this.activeAnomaly) return;
+        ctx.save();
+        if (this.activeAnomaly === 'SOLAR_OVERCHARGE') {
+            ctx.fillStyle = 'rgba(255, 215, 0, 0.09)';
+            ctx.fillRect(0, 0, w, h);
+        } else if (this.activeAnomaly === 'NEON_ECLIPSE') {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+            ctx.fillRect(0, 0, w, h);
+        } else if (this.activeAnomaly === 'EMP_STORM') {
+            if (Math.random() < 0.15) {
+                ctx.fillStyle = 'rgba(0, 240, 255, 0.12)';
+                ctx.fillRect(0, 0, w, h);
+            }
+        }
+        ctx.restore();
+    }
+
+    drawGhostRacer(ctx) {
+        if (!this.ghostEnabled || this.mode !== 'solo' || !this.bestRunRecord || this.bestRunRecord.length === 0) return;
+        const frame = this.bestRunRecord[this.ghostStep % this.bestRunRecord.length];
+        this.ghostStep++;
+        if (!frame || !frame.body || frame.body.length === 0) return;
+
+        ctx.save();
+        ctx.globalAlpha = 0.3 + Math.sin(performance.now() * 0.008) * 0.15;
+        ctx.strokeStyle = '#b026ff';
+        ctx.lineWidth = this.cellSize * 0.6;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.setLineDash([6, 6]);
+
+        ctx.beginPath();
+        ctx.moveTo(frame.body[0].px, frame.body[0].py);
+        for (let i = 1; i < frame.body.length; i++) {
+            ctx.lineTo(frame.body[i].px, frame.body[i].py);
+        }
+        ctx.stroke();
+
+        // Ghost head visor
+        ctx.beginPath();
+        ctx.arc(frame.body[0].px, frame.body[0].py, this.cellSize * 0.45, 0, Math.PI * 2);
+        ctx.fillStyle = '#b026ff';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#b026ff';
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    drawTacticalRadar(ctx) {
+        if (!this.radarEnabled) return;
+        const size = 95;
+        const rx = this.canvas.width - size - 14;
+        const ry = 14;
+
+        ctx.save();
+        ctx.translate(rx, ry);
+
+        // Frame & Background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.82)';
+        ctx.strokeStyle = '#00f0ff';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(0, 0, size, size);
+        ctx.fillRect(0, 0, size, size);
+
+        // Crosshairs
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(size / 2, 0); ctx.lineTo(size / 2, size);
+        ctx.moveTo(0, size / 2); ctx.lineTo(size, size / 2);
+        ctx.stroke();
+
+        // Radar Sweep Needle
+        const sweepAngle = (performance.now() * 0.0025) % (Math.PI * 2);
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.7)';
+        ctx.beginPath();
+        ctx.moveTo(size / 2, size / 2);
+        ctx.lineTo(size / 2 + Math.cos(sweepAngle) * (size / 2), size / 2 + Math.sin(sweepAngle) * (size / 2));
+        ctx.stroke();
+
+        // Scale factors
+        const scaleX = size / this.gridWidth;
+        const scaleY = size / this.gridHeight;
+
+        // Food blips (cyan)
+        ctx.fillStyle = '#00f0ff';
+        for (const f of this.foods) {
+            ctx.fillRect(f.x * scaleX, f.y * scaleY, 2, 2);
+        }
+
+        // Snake heads
+        for (const s of this.snakes) {
+            if (!s.isAlive) continue;
+            ctx.fillStyle = (s === this.player1) ? '#39ff14' : '#ff0055';
+            ctx.fillRect(s.gridX * scaleX - 1.5, s.gridY * scaleY - 1.5, 3.5, 3.5);
+        }
+
+        ctx.font = "900 8px 'Orbitron', monospace";
+        ctx.fillStyle = '#00f0ff';
+        ctx.fillText('RADAR//2077', 4, 10);
         ctx.restore();
     }
 
