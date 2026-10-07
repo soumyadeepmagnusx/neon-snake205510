@@ -284,6 +284,41 @@ class ParticleEngine {
         this.shockwaves.push(new Shockwave(x, y, '#ffffff', 40, 0.3));
     }
 
+    spawnParryFlash(x, y) {
+        // Kinetic deflector pulse
+        this.shockwaves.push(new Shockwave(x, y, '#00f0ff', 65, 0.4));
+        this.shockwaves.push(new Shockwave(x, y, '#39ff14', 45, 0.25));
+        for (let i = 0; i < 28; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 7 + 3;
+            this.particles.push(new Particle(
+                x, y,
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed,
+                Math.random() > 0.5 ? '#00f0ff' : '#39ff14',
+                Math.random() * 3.5 + 2,
+                0.4,
+                'spark'
+            ));
+        }
+        this.addText('⚡ DEFLECT! +200', x, y - 22, '#39ff14', 20);
+    }
+
+    spawnTemporalDistortion(x, y) {
+        if (this.particles.length >= this.maxParticles) return;
+        this.particles.push(new Particle(
+            x + (Math.random() - 0.5) * 24,
+            y + (Math.random() - 0.5) * 24,
+            (Math.random() - 0.5) * 0.4,
+            (Math.random() - 0.5) * 0.4,
+            '#00f0ff',
+            5,
+            0.5,
+            'binary'
+        ));
+    }
+
     addText(text, x, y, color = '#00f0ff', fontSize = 16) {
         this.floatingTexts.push(new FloatingText(text, x, y, color, fontSize));
     }

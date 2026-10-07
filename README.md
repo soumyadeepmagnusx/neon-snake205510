@@ -24,7 +24,8 @@ A high-octane synthwave & cyberpunk canvas arcade game built with vanilla JavaSc
   - Dynamic frequency visualizer spectrum rendered across the canvas background.
   - Procedural sound effects: food chime, turbo boost thrust roar, explosion impact, EMP shockwave, and phase warp tone.
 
-- **Advanced Cyber Systems**:
+  - **🛡️ Kinetic Deflector Parry**: Press `V` (or touch `PARRY`) to deploy a rotating hexagonal barrier. Deflects incoming enemy plasma bolts back at the attacker at 1.5x velocity with electric matrix green sparks, awards +200 deflection points, and cuts through sweeping laser death beams!
+  - **⚡ Temporal Matrix Overclock**: Hold `Z` or `X` (or touch `SLOW-MO`) to enter temporal bullet-time, slowing arena physics, hostile AI, and hazards down to 38% speed while you execute pinpoint evasive maneuvers!
   - **🌀 Linked Quantum Portals**: Two active wormhole gates (`GATE α` [Cyan] and `GATE Ω` [Orange]) spawn in the arena. Snakes and plasma bolts entering one portal instantly emerge from the other with quantum shockwaves and preserved momentum.
   - **💣 Deployable Proximity Cyber Mines**: Press `E` or `Q` to lay armed triangular mines behind your tail. If an enemy snake, laser, or boss steps within range, it detonates, shearing hostile tail segments into collectible food cores and shattering barriers!
   - **⏪ Vintage VCR Fatal Replay**: Relive your fatal crash in slow-motion with vintage retro VCR tracking lines, blinking `REC ●` indicators, tape static, and retro audio rewind effects.
@@ -81,8 +82,10 @@ A high-octane synthwave & cyberpunk canvas arcade game built with vanilla JavaSc
 | **Move** | `WASD` or `Arrow Keys` | `Arrow Keys` | Left Stick / D-Pad | `▲ ◀ ▼ ▶` D-Pad |
 | **Turbo Overdrive** | `Space` or `Left Shift` | `Enter` or `Right Ctrl` | `A` Button / `RT` | `TURBO` Button |
 | **Tactical Drift / Brake** | `B` or `C` | N/A | `B` Button / `LT` | `DRIFT` Button |
-| **Drop Proximity Mine** | `E` or `Q` | N/A | `Y` Button / `LB` | `MINE` Button |
-| **Shoot Plasma Cannon** | `F` or `J` | `L` or `Numpad 0` | `X` Button / `RB` | `FIRE` Button |
+| **Kinetic Parry Barrier** | `V` | N/A | `X` Button / `LB` | `PARRY` Button |
+| **Temporal Overclock** | `Z` or `X` | N/A | Left Trigger / `LT` | `SLOW-MO` Button |
+| **Drop Proximity Mine** | `E` or `Q` | N/A | `Y` Button | `MINE` Button |
+| **Shoot Plasma Cannon** | `F` or `J` | `L` or `Numpad 0` | Right Bumper / `RB` | `FIRE` Button |
 | **Instant VCR Replay** | `R` (on Game Over) | N/A | N/A | `VCR REPLAY` Button |
 | **Pause / Resume** | `P` or `Escape` | `P` or `Escape` | `Start` Button | Tap anywhere |
 

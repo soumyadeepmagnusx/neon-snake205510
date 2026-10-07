@@ -55,9 +55,39 @@ class CyberSnake {
         this.trailStyle = 'ribbon'; // 'ribbon', 'matrix', 'plasma', 'hyperwave'
         this.isDrifting = false;
 
+        // Tactical Kinetic Parry & Temporal Matrix Overclock
+        this.parryTimer = 0;        // active parry defense window (0.55s)
+        this.parryCooldown = 0;     // cooldown timer between parries
+        this.parrySuccessCount = 0;
+        this.overclockEnergy = 100; // 0 - 100%
+        this.isOverclocked = false;
+
         // Movement Timing
         this.baseMoveInterval = 0.11; // base seconds per grid step
         this.moveTimer = 0;
+    }
+
+    triggerParry() {
+        if (this.parryCooldown > 0 || !this.isAlive || this.body.length === 0) return false;
+        this.parryTimer = 0.55;
+        this.parryCooldown = 2.2;
+        if (window.cyberAudio) window.cyberAudio.playParry();
+        if (window.particleEngine) {
+            window.particleEngine.addText('PARRY READY', this.body[0].pixelX, this.body[0].pixelY - 22, '#00f0ff', 13);
+        }
+        return true;
+    }
+
+    setOverclock(active) {
+        if (active && this.overclockEnergy > 10 && this.isAlive) {
+            if (!this.isOverclocked && window.cyberAudio) {
+                window.cyberAudio.playSlowMo();
+                window.cyberAudio.announce('Temporal overclock engaged', true);
+            }
+            this.isOverclocked = true;
+        } else {
+            this.isOverclocked = false;
+        }
     }
 
     setDrifting(drifting) {
@@ -156,6 +186,22 @@ class CyberSnake {
         if (this.ammoCooldown > 0) this.ammoCooldown -= dt;
         if (this.mineCooldown > 0) this.mineCooldown -= dt;
         if (this.portalCooldown > 0) this.portalCooldown -= dt;
+
+        // Tactical Parry & Temporal Overclock Timers
+        if (this.parryTimer > 0) this.parryTimer -= dt;
+        if (this.parryCooldown > 0) this.parryCooldown -= dt;
+
+        if (this.isOverclocked) {
+            this.overclockEnergy = Math.max(0, this.overclockEnergy - dt * 26);
+            if (this.overclockEnergy <= 0) {
+                this.isOverclocked = false;
+            }
+            if (window.particleEngine && Math.random() < 0.4 && this.body.length > 0) {
+                window.particleEngine.spawnTemporalDistortion(this.body[0].pixelX, this.body[0].pixelY);
+            }
+        } else {
+            this.overclockEnergy = Math.min(100, this.overclockEnergy + dt * 14);
+        }
 
         if (this.ammo < this.maxAmmo) {
             this.ammoRechargeTimer = (this.ammoRechargeTimer || 0) + dt;
@@ -522,6 +568,43 @@ class CyberSnake {
             ctx.shadowColor = '#ffe600';
             ctx.setLineDash([6, 4]);
             ctx.stroke();
+            ctx.restore();
+        }
+
+        // Holographic Hexagonal Kinetic Deflector Barrier
+        if (this.parryTimer > 0 && this.body.length > 0) {
+            const head = this.body[0];
+            ctx.save();
+            ctx.translate(head.pixelX, head.pixelY);
+            ctx.rotate(Date.now() * 0.009);
+
+            const hexRadius = cellSize * 1.5;
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (i * Math.PI) / 3;
+                const px = Math.cos(angle) * hexRadius;
+                const py = Math.sin(angle) * hexRadius;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 24;
+            ctx.shadowColor = '#00f0ff';
+            ctx.fillStyle = 'rgba(0, 240, 255, 0.22)';
+            ctx.fill();
+            ctx.stroke();
+
+            // Inner electric rotating ring
+            ctx.beginPath();
+            ctx.arc(0, 0, hexRadius * 0.65, 0, Math.PI * 2);
+            ctx.strokeStyle = '#ffe600';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = '#ffe600';
+            ctx.setLineDash([6, 6]);
+            ctx.stroke();
+
             ctx.restore();
         }
 

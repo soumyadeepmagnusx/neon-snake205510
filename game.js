@@ -231,6 +231,16 @@ class NeonSnakeGame {
                     this.deployPlayerMine(this.player1);
                 }
 
+                // Kinetic Parry / Deflector Barrier (V)
+                if (e.code === 'KeyV') {
+                    this.player1.triggerParry();
+                }
+
+                // Temporal Matrix Overclock (Z or X)
+                if (e.code === 'KeyZ' || e.code === 'KeyX') {
+                    this.player1.setOverclock(true);
+                }
+
                 // Send P2P input if in online mode
                 if (this.mode === 'online' && !window.cyberP2P.isHost) {
                     window.cyberP2P.send({
@@ -278,6 +288,10 @@ class NeonSnakeGame {
 
                 if (e.code === 'KeyB' || e.code === 'KeyC') {
                     this.player1.setDrifting(false);
+                }
+
+                if (e.code === 'KeyZ' || e.code === 'KeyX') {
+                    this.player1.setOverclock(false);
                 }
             }
 
@@ -684,6 +698,31 @@ class NeonSnakeGame {
             bindTouch('touchMine', () => {
                 this.deployPlayerMine(this.player1);
             });
+        }
+
+        // Virtual Parry Deflector button
+        const parryTouchBtn = document.getElementById('touchParry');
+        if (parryTouchBtn) {
+            bindTouch('touchParry', () => {
+                if (this.player1) this.player1.triggerParry();
+            });
+        }
+
+        // Virtual Temporal Overclock button
+        const overclockBtn = document.getElementById('touchOverclock');
+        if (overclockBtn) {
+            const startOverclock = (e) => {
+                e.preventDefault();
+                if (this.player1) this.player1.setOverclock(true);
+            };
+            const endOverclock = (e) => {
+                e.preventDefault();
+                if (this.player1) this.player1.setOverclock(false);
+            };
+            overclockBtn.addEventListener('touchstart', startOverclock, { passive: false });
+            overclockBtn.addEventListener('touchend', endOverclock, { passive: false });
+            overclockBtn.addEventListener('mousedown', startOverclock);
+            overclockBtn.addEventListener('mouseup', endOverclock);
         }
     }
 
@@ -1375,7 +1414,28 @@ class NeonSnakeGame {
                     const seg = target.body[sIdx];
                     const dist = Math.hypot(p.x - seg.pixelX, p.y - seg.pixelY);
 
-                    if (dist < this.cellSize * 0.75) {
+                    if (dist < this.cellSize * 0.85) {
+                        // Tactical Kinetic Parry Deflection!
+                        if (target.parryTimer > 0 && sIdx === 0) {
+                            p.vx = -p.vx * 1.5;
+                            p.vy = -p.vy * 1.5;
+                            p.owner = target;
+                            p.color = '#39ff14';
+                            p.life = 1.4;
+                            target.score += 200;
+                            target.parrySuccessCount = (target.parrySuccessCount || 0) + 1;
+                            if (window.particleEngine) {
+                                window.particleEngine.spawnParryFlash(p.x, p.y);
+                            }
+                            if (window.cyberAudio) {
+                                window.cyberAudio.playParry();
+                                window.cyberAudio.announce('Deflection confirmed', true);
+                            }
+                            this.cameraShake = Math.max(this.cameraShake, 0.35);
+                            hitSnake = true;
+                            break;
+                        }
+
                         const outcome = target.takeDamage(25);
                         window.particleEngine.spawnBurst(p.x, p.y, p.color, 20, 5);
                         this.cameraShake = Math.max(this.cameraShake, 0.3);
@@ -1437,6 +1497,21 @@ class NeonSnakeGame {
 
             for (const snake of this.snakes) {
                 if (!snake.isAlive || snake.phaseShiftTimer > 0 || snake.spawnShieldTimer > 0) continue;
+
+                // Tactical Parry: deflects the laser beam harmlessly!
+                if (snake.parryTimer > 0) {
+                    if (snake === this.player1 && !snake.laserParriedThisSweep && snake.body.length > 0) {
+                        snake.laserParriedThisSweep = true;
+                        snake.score += 150;
+                        snake.parrySuccessCount = (snake.parrySuccessCount || 0) + 1;
+                        if (window.particleEngine) {
+                            window.particleEngine.addText('⚡ LASER PARRIED! +150', snake.body[0].pixelX, snake.body[0].pixelY - 20, '#39ff14', 18);
+                        }
+                        if (window.cyberAudio) window.cyberAudio.playParry();
+                    }
+                    continue;
+                }
+
                 for (const seg of snake.body) {
                     const distToBeam = this.pointToSegmentDistance(seg.pixelX, seg.pixelY, centerX, centerY, endX, endY);
                     if (distToBeam < 10) {
@@ -1450,6 +1525,7 @@ class NeonSnakeGame {
             if (this.laserSweepAngle >= Math.PI * 2) {
                 this.laserSweepActive = false;
                 this.laserSweepTimer = 0;
+                if (this.player1) this.player1.laserParriedThisSweep = false;
             }
         }
     }
@@ -1768,6 +1844,11 @@ class NeonSnakeGame {
         // 14. Retro VCR Death Replay Overlay
         if (this.isVcrReplaying) {
             this.drawVcrReplay(ctx, w, h);
+        }
+
+        // 15. Temporal Matrix Overclock VFX
+        if (this.player1 && this.player1.isOverclocked) {
+            this.drawOverclockVfx(ctx, w, h);
         }
 
         ctx.restore();
@@ -2327,6 +2408,12 @@ class NeonSnakeGame {
                 if (this.player1.spawnShieldTimer > 0 || this.player1.empShieldTimer > 0) {
                     badges += `<span class="badge shield">SHIELD</span>`;
                 }
+                if (this.player1.parryTimer > 0) {
+                    badges += `<span class="badge parry" style="border-color:#00f0ff; color:#00f0ff; box-shadow:0 0 10px #00f0ff;">PARRY DEFLECT</span>`;
+                }
+                if (this.player1.isOverclocked) {
+                    badges += `<span class="badge overclock" style="border-color:#ff007f; color:#ff007f; box-shadow:0 0 10px #ff007f;">OVERCLOCK 38%</span>`;
+                }
                 badgeContainer.innerHTML = badges;
             }
         }
@@ -2352,6 +2439,7 @@ class NeonSnakeGame {
             `HIGH SCORE     : ${this.highScore.toString().padStart(6, '0')}`,
             `CHASSIS LENGTH : ${length} NODES`,
             `HOSTILE KILLS  : ${kills} UNITS`,
+            `KINETIC PARRIES: ${p?.parrySuccessCount || 0} DEFLECTIONS`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,
@@ -2407,6 +2495,25 @@ class NeonSnakeGame {
         }
     }
 
+    drawOverclockVfx(ctx, w, h) {
+        ctx.save();
+        // Radial temporal warp tunnel
+        const grad = ctx.createRadialGradient(w / 2, h / 2, w * 0.15, w / 2, h / 2, w * 0.72);
+        grad.addColorStop(0, 'rgba(0, 240, 255, 0)');
+        grad.addColorStop(1, 'rgba(138, 43, 226, 0.28)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Cyber matrix time dilation banner
+        ctx.font = "900 12px 'Orbitron', monospace";
+        ctx.fillStyle = '#00f0ff';
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#00f0ff';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚡ MATRIX OVERCLOCK ACTIVE // TEMPORAL DILATION 38%', w / 2, 45);
+        ctx.restore();
+    }
+
     loop(currentTime) {
         const dt = Math.min(0.1, (currentTime - this.lastTime) / 1000);
         this.lastTime = currentTime;
@@ -2428,7 +2535,10 @@ class NeonSnakeGame {
             return;
         }
 
-        this.update(dt);
+        // Matrix Temporal Overclock Dilation (38% speed bullet-time simulation)
+        const effectiveDt = (this.player1 && this.player1.isOverclocked) ? dt * 0.38 : dt;
+
+        this.update(effectiveDt);
         this.draw();
 
         requestAnimationFrame((t) => this.loop(t));

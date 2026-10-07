@@ -754,6 +754,28 @@ canvas {
     color: #000;
 }
 
+.touch-btn.parry-btn {
+    border: 2px solid #fff;
+    background: #00bfff;
+    box-shadow: 4px 4px 0px #39ff14, 0 0 14px #00bfff;
+}
+
+.touch-btn.parry-btn:active {
+    background: #39ff14;
+    color: #000;
+}
+
+.touch-btn.overclock-btn {
+    border: 2px solid #fff;
+    background: #8a2be2;
+    box-shadow: 4px 4px 0px #ff007f, 0 0 14px #8a2be2;
+}
+
+.touch-btn.overclock-btn:active {
+    background: #ff007f;
+    color: #fff;
+}
+
 .debrief-actions {
     display: flex;
     gap: 8px;
