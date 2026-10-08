@@ -284,6 +284,33 @@ class ParticleEngine {
         this.shockwaves.push(new Shockwave(x, y, '#ffffff', 40, 0.3));
     }
 
+    spawnMineChainExplosion(x, y, chainIndex = 1) {
+        this.spawnMineExplosion(x, y);
+        const chainColor = chainIndex > 2 ? '#00f0ff' : '#ffe600';
+        this.shockwaves.push(new Shockwave(x, y, chainColor, 60 + chainIndex * 15, 0.45));
+        this.addText(`⚡ CHAIN x${chainIndex}! +${chainIndex * 150}`, x, y - 28, chainColor, 18 + Math.min(6, chainIndex * 2));
+    }
+
+    spawnElectricArc(x1, y1, x2, y2, color = '#00f0ff') {
+        const dist = Math.hypot(x2 - x1, y2 - y1);
+        const steps = Math.max(3, Math.floor(dist / 20));
+        for (let i = 0; i <= steps; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const t = i / steps;
+            const px = x1 + (x2 - x1) * t + (Math.random() - 0.5) * 8;
+            const py = y1 + (y2 - y1) * t + (Math.random() - 0.5) * 8;
+            this.particles.push(new Particle(
+                px, py,
+                (Math.random() - 0.5) * 1.5,
+                (Math.random() - 0.5) * 1.5,
+                color,
+                Math.random() * 2 + 1.5,
+                0.25,
+                'spark'
+            ));
+        }
+    }
+
     spawnParryFlash(x, y) {
         // Kinetic deflector pulse
         this.shockwaves.push(new Shockwave(x, y, '#00f0ff', 65, 0.4));

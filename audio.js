@@ -669,6 +669,27 @@ class CyberAudioEngine {
         }
     }
 
+    playMineChain(chainLevel = 1) {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const baseFreq = Math.min(880, 200 + chainLevel * 85);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(baseFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(35, now + 0.42);
+
+        gain.gain.setValueAtTime(0.65, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.42);
+    }
+
     playSlowMo() {
         this.init();
         if (this.isMuted) return;

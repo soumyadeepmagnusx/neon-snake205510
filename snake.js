@@ -59,6 +59,7 @@ class CyberSnake {
         this.parryTimer = 0;        // active parry defense window (0.55s)
         this.parryCooldown = 0;     // cooldown timer between parries
         this.parrySuccessCount = 0;
+        this.mineChainCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 

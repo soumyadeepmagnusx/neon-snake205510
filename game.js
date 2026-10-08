@@ -1007,52 +1007,97 @@ class NeonSnakeGame {
                 }
 
                 if (triggered) {
-                    if (window.particleEngine) {
-                        window.particleEngine.spawnMineExplosion(mine.pixelX, mine.pixelY);
-                        window.particleEngine.addText('MINE DETONATED!', mine.pixelX, mine.pixelY - 18, '#ff0055', 18);
-                    }
-                    if (window.cyberAudio) window.cyberAudio.playMineDetonate();
-                    this.cameraShake = Math.max(this.cameraShake, 0.4);
-
-                    for (const snake of this.snakes) {
-                        if (!snake.isAlive) continue;
-                        const headDist = Math.hypot(snake.body[0].pixelX - mine.pixelX, snake.body[0].pixelY - mine.pixelY);
-                        if (headDist < this.cellSize * 3.5) {
-                            if (snake.isBoss) {
-                                snake.takeDamage(40);
-                                if (window.particleEngine) {
-                                    window.particleEngine.addText('-40 HP', snake.body[0].pixelX, snake.body[0].pixelY - 25, '#ffe600', 18);
-                                }
-                            } else if (snake !== mine.owner) {
-                                const dropCount = Math.min(3, Math.max(1, snake.body.length - 2));
-                                for (let k = 0; k < dropCount; k++) {
-                                    const popped = snake.body.pop();
-                                    if (popped) {
-                                        this.foods.push({
-                                            x: popped.x,
-                                            y: popped.y,
-                                            pixelX: popped.pixelX,
-                                            pixelY: popped.pixelY,
-                                            type: 'normal',
-                                            color: '#ff0055',
-                                            points: 15,
-                                            createdAt: performance.now()
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    this.obstacles = this.obstacles.filter(obs => {
-                        const obPixX = obs.x * this.cellSize + this.cellSize / 2;
-                        const obPixY = obs.y * this.cellSize + this.cellSize / 2;
-                        return Math.hypot(obPixX - mine.pixelX, obPixY - mine.pixelY) > this.cellSize * 2.2;
-                    });
-
-                    this.mines.splice(m, 1);
+                    this.detonateMine(mine, 1);
                 }
             }
+        }
+    }
+
+    detonateMine(mine, chainIndex = 1) {
+        const mineIdx = this.mines.indexOf(mine);
+        if (mineIdx === -1) return;
+        this.mines.splice(mineIdx, 1);
+
+        const owner = mine.owner;
+        const chainBonus = chainIndex * 150;
+        if (owner) {
+            owner.score += chainBonus;
+            if (chainIndex > 1) {
+                owner.mineChainCount = (owner.mineChainCount || 0) + 1;
+            }
+        }
+
+        if (window.particleEngine) {
+            if (chainIndex > 1) {
+                window.particleEngine.spawnMineChainExplosion(mine.pixelX, mine.pixelY, chainIndex);
+            } else {
+                window.particleEngine.spawnMineExplosion(mine.pixelX, mine.pixelY);
+                window.particleEngine.addText('MINE DETONATED!', mine.pixelX, mine.pixelY - 18, '#ff0055', 18);
+            }
+        }
+
+        if (window.cyberAudio) {
+            if (chainIndex > 1) {
+                window.cyberAudio.playMineChain(chainIndex);
+                if (chainIndex >= 3) {
+                    window.cyberAudio.announce('Maximum chain detonation', true);
+                }
+            } else {
+                window.cyberAudio.playMineDetonate();
+            }
+        }
+
+        this.cameraShake = Math.max(this.cameraShake, Math.min(0.8, 0.35 + chainIndex * 0.1));
+
+        for (const snake of this.snakes) {
+            if (!snake.isAlive || snake.body.length === 0) continue;
+            const headDist = Math.hypot(snake.body[0].pixelX - mine.pixelX, snake.body[0].pixelY - mine.pixelY);
+            if (headDist < this.cellSize * 3.5) {
+                if (snake.isBoss) {
+                    const dmg = 40 + chainIndex * 10;
+                    snake.takeDamage(dmg);
+                    if (window.particleEngine) {
+                        window.particleEngine.addText(`-${dmg} HP`, snake.body[0].pixelX, snake.body[0].pixelY - 25, '#ffe600', 18);
+                    }
+                } else if (snake !== mine.owner) {
+                    const dropCount = Math.min(3, Math.max(1, snake.body.length - 2));
+                    for (let k = 0; k < dropCount; k++) {
+                        const popped = snake.body.pop();
+                        if (popped) {
+                            this.foods.push({
+                                x: popped.x,
+                                y: popped.y,
+                                pixelX: popped.pixelX,
+                                pixelY: popped.pixelY,
+                                type: 'normal',
+                                color: '#ff0055',
+                                points: 15,
+                                createdAt: performance.now()
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        this.obstacles = this.obstacles.filter(obs => {
+            const obPixX = obs.x * this.cellSize + this.cellSize / 2;
+            const obPixY = obs.y * this.cellSize + this.cellSize / 2;
+            return Math.hypot(obPixX - mine.pixelX, obPixY - mine.pixelY) > this.cellSize * 2.2;
+        });
+
+        // Cascading chain reaction: detonate adjacent armed mines
+        const chainRadius = this.cellSize * 4.8;
+        const adjacentMines = this.mines.filter(other => {
+            if (!other.isArmed || other === mine) return false;
+            return Math.hypot(other.pixelX - mine.pixelX, other.pixelY - mine.pixelY) <= chainRadius;
+        });
+
+        for (const adj of adjacentMines) {
+            if (window.particleEngine) {
+                window.particleEngine.spawnElectricArc(mine.pixelX, mine.pixelY, adj.pixelX, adj.pixelY, '#00f0ff');
+            }
+            this.detonateMine(adj, chainIndex + 1);
         }
     }
 
@@ -1356,6 +1401,20 @@ class NeonSnakeGame {
             }
             return true;
         });
+
+        // Tactical EMP Overload: Detonate all active armed mines across the grid
+        const armedMines = [...this.mines.filter(m => m.isArmed)];
+        if (armedMines.length > 0) {
+            window.particleEngine.addText('⚡ MINES OVERLOADED!', cx, cy - 25, '#ffe600', 16);
+            armedMines.forEach((m, idx) => {
+                setTimeout(() => {
+                    if (this.mines.includes(m)) {
+                        m.owner = sourceSnake; // Credit source snake
+                        this.detonateMine(m, idx + 1);
+                    }
+                }, idx * 75);
+            });
+        }
 
         // Briefly stun / freeze enemy snakes
         for (const s of this.snakes) {
@@ -1919,6 +1978,39 @@ class NeonSnakeGame {
     }
 
     drawMines(ctx) {
+        // Draw electric perimeter arcs between nearby armed mines
+        if (this.mines.length > 1) {
+            ctx.save();
+            for (let i = 0; i < this.mines.length; i++) {
+                const m1 = this.mines[i];
+                if (!m1.isArmed) continue;
+                for (let j = i + 1; j < this.mines.length; j++) {
+                    const m2 = this.mines[j];
+                    if (!m2.isArmed) continue;
+                    const d = Math.hypot(m1.pixelX - m2.pixelX, m1.pixelY - m2.pixelY);
+                    if (d < this.cellSize * 6.5) {
+                        ctx.beginPath();
+                        ctx.moveTo(m1.pixelX, m1.pixelY);
+                        const segments = 5;
+                        for (let s = 1; s < segments; s++) {
+                            const t = s / segments;
+                            const mx = m1.pixelX + (m2.pixelX - m1.pixelX) * t;
+                            const my = m1.pixelY + (m2.pixelY - m1.pixelY) * t;
+                            const jitter = (Math.sin(Date.now() * 0.02 + s * 4) + (Math.random() - 0.5)) * 4.5;
+                            ctx.lineTo(mx + jitter, my + jitter);
+                        }
+                        ctx.lineTo(m2.pixelX, m2.pixelY);
+                        ctx.strokeStyle = 'rgba(0, 240, 255, 0.55)';
+                        ctx.lineWidth = 1.6;
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = '#00f0ff';
+                        ctx.stroke();
+                    }
+                }
+            }
+            ctx.restore();
+        }
+
         for (const mine of this.mines) {
             ctx.save();
             ctx.translate(mine.pixelX, mine.pixelY);
@@ -2440,6 +2532,7 @@ class NeonSnakeGame {
             `CHASSIS LENGTH : ${length} NODES`,
             `HOSTILE KILLS  : ${kills} UNITS`,
             `KINETIC PARRIES: ${p?.parrySuccessCount || 0} DEFLECTIONS`,
+            `EMP MINE CHAINS: ${p?.mineChainCount || 0} OVERLOADS`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,
