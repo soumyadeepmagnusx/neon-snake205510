@@ -1247,15 +1247,19 @@ class NeonSnakeGame {
                         newHeadX = (target.x + snake.dir.x + gridWidth) % gridWidth;
                         newHeadY = (target.y + snake.dir.y + gridHeight) % gridHeight;
                         snake.portalCooldown = 1.6;
+                        snake.warpOverdriveTimer = 3.5;
+                        snake.warpOverdriveCount = (snake.warpOverdriveCount || 0) + 1;
+                        snake.score += 100;
 
                         if (window.particleEngine) {
                             window.particleEngine.spawnPortalWarp(p.pixelX, p.pixelY, p.color);
                             window.particleEngine.spawnPortalWarp(target.pixelX, target.pixelY, target.color);
-                            window.particleEngine.addText('QUANTUM WARP', p.pixelX, p.pixelY - 14, p.color, 16);
+                            window.particleEngine.spawnWarpOverdriveRings(target.pixelX, target.pixelY, target.color);
+                            window.particleEngine.addText('WARP OVERDRIVE! +100', target.pixelX, target.pixelY - 24, '#00f0ff', 18);
                         }
                         if (window.cyberAudio) {
-                            window.cyberAudio.playPortalWarp();
-                            if (snake === this.player1) window.cyberAudio.announce('Quantum jump.');
+                            window.cyberAudio.playPortalWarpOverdrive();
+                            if (snake === this.player1) window.cyberAudio.announce('Quantum overdrive engaged', true);
                         }
                         break;
                     }
@@ -1938,6 +1942,26 @@ class NeonSnakeGame {
     }
 
     drawPortals(ctx) {
+        // Quantum Spatial Alignment Vector Beam
+        if (this.portals.length >= 2) {
+            const p1 = this.portals[0];
+            const p2 = this.portals[1];
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(p1.pixelX, p1.pixelY);
+            ctx.lineTo(p2.pixelX, p2.pixelY);
+            const grad = ctx.createLinearGradient(p1.pixelX, p1.pixelY, p2.pixelX, p2.pixelY);
+            grad.addColorStop(0, 'rgba(0, 240, 255, 0.25)');
+            grad.addColorStop(0.5, 'rgba(255, 255, 255, 0.38)');
+            grad.addColorStop(1, 'rgba(255, 119, 0, 0.25)');
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = 1.6;
+            ctx.setLineDash([8, 8]);
+            ctx.lineDashOffset = -Date.now() * 0.025;
+            ctx.stroke();
+            ctx.restore();
+        }
+
         for (const portal of this.portals) {
             ctx.save();
             ctx.translate(portal.pixelX, portal.pixelY);
@@ -2337,7 +2361,19 @@ class NeonSnakeGame {
             ctx.fillRect(f.x * scaleX, f.y * scaleY, 2, 2);
         }
 
-        // Quantum Portal blips (dual-color)
+        // Quantum Portal blips & Spatial Vector (dual-color)
+        if (this.portals.length >= 2) {
+            const p1 = this.portals[0];
+            const p2 = this.portals[1];
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
+            ctx.setLineDash([2, 2]);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(p1.x * scaleX, p1.y * scaleY);
+            ctx.lineTo(p2.x * scaleX, p2.y * scaleY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
         for (const p of this.portals) {
             ctx.fillStyle = p.color;
             ctx.fillRect(p.x * scaleX - 1.5, p.y * scaleY - 1.5, 3.5, 3.5);
@@ -2503,6 +2539,9 @@ class NeonSnakeGame {
                 if (this.player1.parryTimer > 0) {
                     badges += `<span class="badge parry" style="border-color:#00f0ff; color:#00f0ff; box-shadow:0 0 10px #00f0ff;">PARRY DEFLECT</span>`;
                 }
+                if (this.player1.warpOverdriveTimer > 0) {
+                    badges += `<span class="badge warp" style="border-color:#00f0ff; color:#00f0ff; box-shadow:0 0 10px #00f0ff;">WARP OVERDRIVE (${Math.ceil(this.player1.warpOverdriveTimer)}s)</span>`;
+                }
                 if (this.player1.isOverclocked) {
                     badges += `<span class="badge overclock" style="border-color:#ff007f; color:#ff007f; box-shadow:0 0 10px #ff007f;">OVERCLOCK 38%</span>`;
                 }
@@ -2533,6 +2572,7 @@ class NeonSnakeGame {
             `HOSTILE KILLS  : ${kills} UNITS`,
             `KINETIC PARRIES: ${p?.parrySuccessCount || 0} DEFLECTIONS`,
             `EMP MINE CHAINS: ${p?.mineChainCount || 0} OVERLOADS`,
+            `QUANTUM WARPS  : ${p?.warpOverdriveCount || 0} OVERDRIVES`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,

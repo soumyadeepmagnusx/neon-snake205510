@@ -276,6 +276,25 @@ class ParticleEngine {
         this.shockwaves.push(new Shockwave(x, y, color, 45, 0.45));
     }
 
+    spawnWarpOverdriveRings(x, y, color = '#00f0ff') {
+        this.shockwaves.push(new Shockwave(x, y, color, 75, 0.5));
+        this.shockwaves.push(new Shockwave(x, y, '#ffffff', 50, 0.35));
+        for (let i = 0; i < 22; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const angle = (Math.PI * 2 * i) / 22;
+            const speed = Math.random() * 4 + 3;
+            this.particles.push(new Particle(
+                x, y,
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed,
+                color,
+                Math.random() * 3 + 2,
+                0.5,
+                'ring'
+            ));
+        }
+    }
+
     spawnMineExplosion(x, y) {
         // High density explosive burst
         this.spawnExplosion(x, y, '#ff0055', 28);

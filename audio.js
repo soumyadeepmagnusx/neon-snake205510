@@ -608,6 +608,42 @@ class CyberAudioEngine {
         osc.stop(now + 0.3);
     }
 
+    playPortalWarpOverdrive() {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+
+        const osc1 = this.ctx.createOscillator();
+        const osc2 = this.ctx.createOscillator();
+        const filter = this.ctx.createBiquadFilter();
+        const gain = this.ctx.createGain();
+
+        osc1.type = 'sawtooth';
+        osc1.frequency.setValueAtTime(280, now);
+        osc1.frequency.exponentialRampToValueAtTime(1400, now + 0.36);
+
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(560, now);
+        osc2.frequency.exponentialRampToValueAtTime(2800, now + 0.36);
+
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(700, now);
+        filter.frequency.exponentialRampToValueAtTime(2600, now + 0.36);
+
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
+
+        osc1.connect(filter);
+        osc2.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.sfxGain);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 0.36);
+        osc2.stop(now + 0.36);
+    }
+
     playMineArm() {
         this.init();
         if (this.isMuted) return;

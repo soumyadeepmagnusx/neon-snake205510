@@ -60,6 +60,8 @@ class CyberSnake {
         this.parryCooldown = 0;     // cooldown timer between parries
         this.parrySuccessCount = 0;
         this.mineChainCount = 0;
+        this.warpOverdriveTimer = 0;
+        this.warpOverdriveCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -182,6 +184,12 @@ class CyberSnake {
         if (this.empShieldTimer > 0) this.empShieldTimer -= dt;
         if (this.multiplierTimer > 0) this.multiplierTimer -= dt;
         if (this.spawnShieldTimer > 0) this.spawnShieldTimer -= dt;
+        if (this.warpOverdriveTimer > 0) {
+            this.warpOverdriveTimer -= dt;
+            if (window.particleEngine && Math.random() < 0.35 && this.body.length > 0) {
+                window.particleEngine.spawnTemporalDistortion(this.body[0].pixelX, this.body[0].pixelY);
+            }
+        }
 
         // Weapon & Ammo Cooldown
         if (this.ammoCooldown > 0) this.ammoCooldown -= dt;
@@ -334,7 +342,7 @@ class CyberSnake {
 
         ctx.save();
 
-        const isPhasing = this.phaseShiftTimer > 0;
+        const isPhasing = this.phaseShiftTimer > 0 || this.warpOverdriveTimer > 0;
         const isShielded = this.spawnShieldTimer > 0 || this.empShieldTimer > 0;
 
         if (isPhasing) {
@@ -606,6 +614,30 @@ class CyberSnake {
             ctx.setLineDash([6, 6]);
             ctx.stroke();
 
+            ctx.restore();
+        }
+
+        // Quantum Warp Overdrive Dual-Color Aura
+        if (this.warpOverdriveTimer > 0 && this.body.length > 0) {
+            const head = this.body[0];
+            ctx.save();
+            ctx.translate(head.pixelX, head.pixelY);
+            ctx.rotate(-Date.now() * 0.008);
+            ctx.beginPath();
+            ctx.arc(0, 0, cellSize * 1.35, 0, Math.PI * 2);
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 2.5;
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = '#00f0ff';
+            ctx.setLineDash([4, 6]);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(0, 0, cellSize * 1.05, 0, Math.PI * 2);
+            ctx.strokeStyle = '#ff7700';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = '#ff7700';
+            ctx.stroke();
             ctx.restore();
         }
 
