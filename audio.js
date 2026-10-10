@@ -883,6 +883,38 @@ class CyberAudioEngine {
         sweep.stop(now + 0.35);
     }
 
+    playVortexSiphon() {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+
+        // Gravitational swirling oscillator
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.exponentialRampToValueAtTime(480, now + 0.25);
+        osc.frequency.exponentialRampToValueAtTime(160, now + 0.5);
+
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+        // Lowpass resonance filter
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(600, now);
+        filter.frequency.exponentialRampToValueAtTime(1800, now + 0.25);
+        filter.frequency.exponentialRampToValueAtTime(400, now + 0.5);
+        filter.Q.setValueAtTime(6, now);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.sfxGain);
+
+        osc.start(now);
+        osc.stop(now + 0.5);
+    }
+
     // Cyber Voice Announcer System
     announce(text, priority = false) {
         if (this.isMuted) return;

@@ -70,6 +70,9 @@ class CyberSnake {
         this.overshield = false;
         this.pulseNovaCooldown = 0;
         this.pulseNovaCount = 0;
+        this.vortexTimer = 0;
+        this.vortexCooldown = 0;
+        this.vortexSiphonCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -117,6 +120,24 @@ class CyberSnake {
         }
         if (window.particleEngine) {
             window.particleEngine.spawnPulseNova(this.body[0].pixelX, this.body[0].pixelY);
+        }
+        return true;
+    }
+
+    triggerVortexSiphon() {
+        if (this.vortexCooldown > 0 || !this.isAlive || this.body.length === 0) return false;
+        this.vortexTimer = 5.0;
+        this.vortexCooldown = 11.0;
+        this.vortexSiphonCount = (this.vortexSiphonCount || 0) + 1;
+        this.score += 200;
+
+        if (window.cyberAudio) {
+            window.cyberAudio.playVortexSiphon();
+            if (this.id === 'player1') window.cyberAudio.announce('Quantum vortex gravitational siphon active', true);
+        }
+        if (window.particleEngine) {
+            window.particleEngine.spawnVortexSiphonActivation(this.body[0].pixelX, this.body[0].pixelY);
+            window.particleEngine.addText('🌀 VORTEX SIPHON ENGAGED!', this.body[0].pixelX, this.body[0].pixelY - 24, '#00f0ff', 18);
         }
         return true;
     }
@@ -275,6 +296,8 @@ class CyberSnake {
         }
         if (this.naniteCooldown > 0) this.naniteCooldown -= dt;
         if (this.pulseNovaCooldown > 0) this.pulseNovaCooldown -= dt;
+        if (this.vortexTimer > 0) this.vortexTimer -= dt;
+        if (this.vortexCooldown > 0) this.vortexCooldown -= dt;
 
         // Weapon & Ammo Cooldown
         if (this.ammoCooldown > 0) this.ammoCooldown -= dt;
@@ -723,6 +746,45 @@ class CyberSnake {
             ctx.lineWidth = 2;
             ctx.shadowColor = '#ff7700';
             ctx.stroke();
+            ctx.restore();
+        }
+
+        // Quantum Vortex Gravitational Siphon Aura
+        if (this.vortexTimer > 0 && this.body.length > 0) {
+            const head = this.body[0];
+            ctx.save();
+            ctx.translate(head.pixelX, head.pixelY);
+            const vortexAngle = Date.now() * 0.012;
+            ctx.rotate(vortexAngle);
+
+            // Expanding / Contracting Gravitational Event Horizon
+            const siphonRadius = cellSize * 2.8;
+            ctx.beginPath();
+            ctx.arc(0, 0, siphonRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([8, 6]);
+            ctx.shadowBlur = 16;
+            ctx.shadowColor = '#00f0ff';
+            ctx.stroke();
+
+            // Spiral Siphon Arms
+            for (let arm = 0; arm < 4; arm++) {
+                const startA = (arm * Math.PI) / 2;
+                ctx.beginPath();
+                for (let r = 8; r < siphonRadius; r += 4) {
+                    const theta = startA + (r / siphonRadius) * 2.2;
+                    const sx = Math.cos(theta) * r;
+                    const sy = Math.sin(theta) * r;
+                    if (r === 8) ctx.moveTo(sx, sy);
+                    else ctx.lineTo(sx, sy);
+                }
+                ctx.strokeStyle = arm % 2 === 0 ? '#00f0ff' : '#ffe600';
+                ctx.lineWidth = 1.8;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = arm % 2 === 0 ? '#00f0ff' : '#ffe600';
+                ctx.stroke();
+            }
             ctx.restore();
         }
 

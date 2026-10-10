@@ -256,6 +256,11 @@ class NeonSnakeGame {
                     this.triggerPlayerPulseNova(this.player1);
                 }
 
+                // Quantum Vortex Gravitational Siphon (Y)
+                if (e.code === 'KeyY') {
+                    this.triggerPlayerVortexSiphon(this.player1);
+                }
+
                 // Send P2P input if in online mode
                 if (this.mode === 'online' && !window.cyberP2P.isHost) {
                     window.cyberP2P.send({
@@ -408,6 +413,15 @@ class NeonSnakeGame {
                 }
             }
 
+            this.updateHUD();
+        }
+    }
+
+    triggerPlayerVortexSiphon(snake) {
+        if (!snake || !snake.isAlive) return;
+        const triggered = snake.triggerVortexSiphon();
+        if (triggered && snake.body.length > 0) {
+            this.cameraShake = Math.max(this.cameraShake, 0.4);
             this.updateHUD();
         }
     }
@@ -842,6 +856,14 @@ class NeonSnakeGame {
         if (novaTouchBtn) {
             bindTouch('touchNova', () => {
                 this.triggerPlayerPulseNova(this.player1);
+            });
+        }
+
+        // Virtual Quantum Vortex button
+        const vortexTouchBtn = document.getElementById('touchVortex');
+        if (vortexTouchBtn) {
+            bindTouch('touchVortex', () => {
+                this.triggerPlayerVortexSiphon(this.player1);
             });
         }
     }
@@ -1931,6 +1953,48 @@ class NeonSnakeGame {
             });
         }
 
+        // Quantum Vortex Gravitational Siphon Physics (Suck nearby energy cores toward head)
+        for (const s of this.snakes) {
+            if (s.isAlive && s.vortexTimer > 0 && s.body.length > 0) {
+                const hx = s.body[0].pixelX;
+                const hy = s.body[0].pixelY;
+                const siphonRadius = this.cellSize * 7.5;
+
+                for (let fIdx = this.foods.length - 1; fIdx >= 0; fIdx--) {
+                    const f = this.foods[fIdx];
+                    const fx = f.x * this.cellSize + 10;
+                    const fy = f.y * this.cellSize + 10;
+                    const dist = Math.hypot(fx - hx, fy - hy);
+
+                    if (dist <= siphonRadius) {
+                        // Gravitational pull toward snake head
+                        if (dist <= this.cellSize * 1.5) {
+                            // Siphoned into mouth!
+                            this.foods.splice(fIdx, 1);
+                            s.grow(1);
+                            this.onFoodCollected(s, f);
+                            if (window.particleEngine) {
+                                window.particleEngine.spawnBurst(fx, fy, f.color, 12, 4);
+                                window.particleEngine.addText('🌀 SIPHONED!', fx, fy - 16, '#00f0ff', 14);
+                            }
+                        } else {
+                            // Attract coordinates closer to snake
+                            const pullSpeed = (dt * 12);
+                            const dirX = Math.sign(s.gridX - f.x);
+                            const dirY = Math.sign(s.gridY - f.y);
+                            if (Math.random() < 0.25) {
+                                if (dirX !== 0) f.x += dirX;
+                                else if (dirY !== 0) f.y += dirY;
+                            }
+                            if (window.particleEngine && Math.random() < 0.2) {
+                                window.particleEngine.spawnTrailSparks(fx, fy, '#00f0ff', 1);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Update projectiles & combat collisions
         this.updateProjectiles(dt);
 
@@ -2729,6 +2793,12 @@ class NeonSnakeGame {
                 if (this.player1.parryTimer > 0) {
                     badges += `<span class="badge parry" style="border-color:#00f0ff; color:#00f0ff; box-shadow:0 0 10px #00f0ff;">PARRY DEFLECT</span>`;
                 }
+                if (this.player1.pulseNovaCooldown > 0) {
+                    // nova cooldown or state
+                }
+                if (this.player1.vortexTimer > 0) {
+                    badges += `<span class="badge vortex" style="border-color:#00f0ff; color:#00f0ff; box-shadow:0 0 10px #00f0ff;">VORTEX SIPHON (${Math.ceil(this.player1.vortexTimer)}s)</span>`;
+                }
                 if (this.player1.warpOverdriveTimer > 0) {
                     badges += `<span class="badge warp" style="border-color:#00f0ff; color:#00f0ff; box-shadow:0 0 10px #00f0ff;">WARP OVERDRIVE (${Math.ceil(this.player1.warpOverdriveTimer)}s)</span>`;
                 }
@@ -2772,6 +2842,7 @@ class NeonSnakeGame {
             `RAILGUN SHOTS  : ${p?.railgunShotCount || 0} PIERCING BURSTS`,
             `NANITE REPAIRS : ${p?.naniteRepairCount || 0} RECONSTRUCTIONS`,
             `PULSE NOVAS   : ${p?.pulseNovaCount || 0} DISCHARGES`,
+            `VORTEX SIPHONS : ${p?.vortexSiphonCount || 0} GRAVITATIONAL HARVESTS`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,

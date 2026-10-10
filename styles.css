@@ -771,6 +771,18 @@ canvas {
     color: #fff;
 }
 
+.touch-btn.vortex-btn {
+    border: 2px solid #fff;
+    background: #0088cc;
+    box-shadow: 4px 4px 0px #00f0ff, 0 0 14px #00f0ff;
+    color: #fff;
+}
+
+.touch-btn.vortex-btn:active {
+    background: #00f0ff;
+    color: #000;
+}
+
 .touch-btn.drift-btn {
     border: 2px solid #fff;
     background: #0077ff;

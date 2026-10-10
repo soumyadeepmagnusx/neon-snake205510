@@ -354,6 +354,26 @@ class ParticleEngine {
         this.addText('⚡ PULSE NOVA! +150', x, y - 28, '#00f0ff', 20);
     }
 
+    spawnVortexSiphonActivation(x, y) {
+        this.shockwaves.push(new Shockwave(x, y, '#00f0ff', 110, 0.5));
+        this.shockwaves.push(new Shockwave(x, y, '#ffe600', 70, 0.35));
+
+        for (let i = 0; i < 28; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const angle = (i * Math.PI * 2) / 28;
+            const speed = Math.random() * 5 + 3;
+            this.particles.push(new Particle(
+                x, y,
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed,
+                i % 2 === 0 ? '#00f0ff' : '#ffe600',
+                Math.random() * 2.5 + 2,
+                0.4,
+                'spark'
+            ));
+        }
+    }
+
     spawnMineExplosion(x, y) {
         // High density explosive burst
         this.spawnExplosion(x, y, '#ff0055', 28);
