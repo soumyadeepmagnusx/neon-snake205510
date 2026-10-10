@@ -27,6 +27,7 @@ A high-octane synthwave & cyberpunk canvas arcade game built with vanilla JavaSc
   - **⚡ Hyper-Drive Plasma Railgun**: Press `G` (or touch `RAILGUN`) to consume 2 ammo cores and discharge a hyper-velocity piercing particle beam. Blasts straight through lines of neon obstacles, deals +55 damage across multiple hostile snakes in a single shot (+300 bonus score per piercing strike), and features ionized sub-bass acoustics!
   - **💥 Cyber Shockwave Pulse Nova**: Press `T` (or touch `NOVA`) to discharge an expanding 360° kinetic shockwave ring. Deflects incoming hostile plasma projectiles in all directions, shatters nearby arena obstacles into energy cores, repels and stuns rival cyber snakes, and emits multi-ring holographic resonance acoustics!
   - **🌀 Quantum Vortex Gravitational Siphon**: Press `Y` (or touch `VORTEX`) to activate an intense localized gravitational singularity around your cyber snake's chassis for 5.0s. Spins 4 concentric spiral siphon arms that exert gravitational pull across 7.5 grid cells, drawing loose energy cores, power-ups, and shattered debris directly into your mouth with swirling low-pass resonance synthesis!
+  - **👤 Optical Thermal Stealth Cloak**: Press `U` (or touch `CLOAK`) to activate active camouflage cloaking for 4.5s. Renders chassis 80% translucent with chromatic ripple distortion, eliminates radar signature from enemy AI scanners, safely phases past defensive turret line-of-sights, and plays phase-shifted audio synthesis!
   - **🛰️ Nanite Repair Drones & Hull Overshield**: Press `H` or `N` (or touch `REPAIR`) to launch 3 autonomous orbiting nanite repair micro-drones. Nanites actively reconstruct sheared tail nodes (+1 segment every 1.6s) and generate an ablative **Hull Overshield Barrier** that absorbs a fatal boundary or body impact to keep your run alive!
   - **🛡️ Kinetic Deflector Parry**: Press `V` (or touch `PARRY`) to deploy a rotating hexagonal barrier. Deflects incoming enemy plasma bolts back at the attacker at 1.5x velocity with electric matrix green sparks, awards +200 deflection points, and cuts through sweeping laser death beams!
   - **⚡ Temporal Matrix Overclock**: Hold `Z` or `X` (or touch `SLOW-MO`) to enter temporal bullet-time, slowing arena physics, hostile AI, and hazards down to 38% speed while you execute pinpoint evasive maneuvers!
@@ -94,6 +95,7 @@ A high-octane synthwave & cyberpunk canvas arcade game built with vanilla JavaSc
 | **Hyper-Drive Railgun** | `G` | N/A | Left Trigger / `LT` | `RAILGUN` Button |
 | **Cyber Pulse Nova** | `T` | N/A | Right Stick / `R3` | `NOVA` Button |
 | **Quantum Vortex Siphon** | `Y` | N/A | Left Bumper / `LB` | `VORTEX` Button |
+| **Optical Thermal Cloak** | `U` | N/A | Right Bumper / `RB` | `CLOAK` Button |
 | **Nanite Repair Swarm** | `H` or `N` | N/A | Right Stick / `R3` | `REPAIR` Button |
 | **Instant VCR Replay** | `R` (on Game Over) | N/A | N/A | `VCR REPLAY` Button |
 | **Pause / Resume** | `P` or `Escape` | `P` or `Escape` | `Start` Button | Tap anywhere |

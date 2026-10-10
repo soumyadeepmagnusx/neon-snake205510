@@ -261,6 +261,11 @@ class NeonSnakeGame {
                     this.triggerPlayerVortexSiphon(this.player1);
                 }
 
+                // Optical Thermal Stealth Cloak (U)
+                if (e.code === 'KeyU') {
+                    this.triggerPlayerThermalCloak(this.player1);
+                }
+
                 // Send P2P input if in online mode
                 if (this.mode === 'online' && !window.cyberP2P.isHost) {
                     window.cyberP2P.send({
@@ -422,6 +427,15 @@ class NeonSnakeGame {
         const triggered = snake.triggerVortexSiphon();
         if (triggered && snake.body.length > 0) {
             this.cameraShake = Math.max(this.cameraShake, 0.4);
+            this.updateHUD();
+        }
+    }
+
+    triggerPlayerThermalCloak(snake) {
+        if (!snake || !snake.isAlive) return;
+        const triggered = snake.triggerThermalCloak();
+        if (triggered && snake.body.length > 0) {
+            this.cameraShake = Math.max(this.cameraShake, 0.3);
             this.updateHUD();
         }
     }
@@ -864,6 +878,14 @@ class NeonSnakeGame {
         if (vortexTouchBtn) {
             bindTouch('touchVortex', () => {
                 this.triggerPlayerVortexSiphon(this.player1);
+            });
+        }
+
+        // Virtual Thermal Cloak button
+        const cloakTouchBtn = document.getElementById('touchCloak');
+        if (cloakTouchBtn) {
+            bindTouch('touchCloak', () => {
+                this.triggerPlayerThermalCloak(this.player1);
             });
         }
     }
@@ -2799,6 +2821,9 @@ class NeonSnakeGame {
                 if (this.player1.vortexTimer > 0) {
                     badges += `<span class="badge vortex" style="border-color:#00f0ff; color:#00f0ff; box-shadow:0 0 10px #00f0ff;">VORTEX SIPHON (${Math.ceil(this.player1.vortexTimer)}s)</span>`;
                 }
+                if (this.player1.cloakTimer > 0) {
+                    badges += `<span class="badge cloak" style="border-color:#a855f7; color:#a855f7; box-shadow:0 0 10px #a855f7;">THERMAL CLOAK (${Math.ceil(this.player1.cloakTimer)}s)</span>`;
+                }
                 if (this.player1.warpOverdriveTimer > 0) {
                     badges += `<span class="badge warp" style="border-color:#00f0ff; color:#00f0ff; box-shadow:0 0 10px #00f0ff;">WARP OVERDRIVE (${Math.ceil(this.player1.warpOverdriveTimer)}s)</span>`;
                 }
@@ -2843,6 +2868,7 @@ class NeonSnakeGame {
             `NANITE REPAIRS : ${p?.naniteRepairCount || 0} RECONSTRUCTIONS`,
             `PULSE NOVAS   : ${p?.pulseNovaCount || 0} DISCHARGES`,
             `VORTEX SIPHONS : ${p?.vortexSiphonCount || 0} GRAVITATIONAL HARVESTS`,
+            `THERMAL CLOAKS : ${p?.cloakCount || 0} STEALTH CONCEALMENTS`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,

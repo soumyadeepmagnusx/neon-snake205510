@@ -73,6 +73,9 @@ class CyberSnake {
         this.vortexTimer = 0;
         this.vortexCooldown = 0;
         this.vortexSiphonCount = 0;
+        this.cloakTimer = 0;
+        this.cloakCooldown = 0;
+        this.cloakCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -138,6 +141,24 @@ class CyberSnake {
         if (window.particleEngine) {
             window.particleEngine.spawnVortexSiphonActivation(this.body[0].pixelX, this.body[0].pixelY);
             window.particleEngine.addText('🌀 VORTEX SIPHON ENGAGED!', this.body[0].pixelX, this.body[0].pixelY - 24, '#00f0ff', 18);
+        }
+        return true;
+    }
+
+    triggerThermalCloak() {
+        if (this.cloakCooldown > 0 || !this.isAlive || this.body.length === 0) return false;
+        this.cloakTimer = 4.5;
+        this.cloakCooldown = 10.0;
+        this.cloakCount = (this.cloakCount || 0) + 1;
+        this.score += 150;
+
+        if (window.cyberAudio) {
+            window.cyberAudio.playThermalCloak();
+            if (this.id === 'player1') window.cyberAudio.announce('Optical thermal stealth cloak activated', true);
+        }
+        if (window.particleEngine) {
+            window.particleEngine.spawnCloakDistortion(this.body[0].pixelX, this.body[0].pixelY);
+            window.particleEngine.addText('👤 THERMAL CLOAK ACTIVE!', this.body[0].pixelX, this.body[0].pixelY - 24, '#a855f7', 18);
         }
         return true;
     }
@@ -298,6 +319,8 @@ class CyberSnake {
         if (this.pulseNovaCooldown > 0) this.pulseNovaCooldown -= dt;
         if (this.vortexTimer > 0) this.vortexTimer -= dt;
         if (this.vortexCooldown > 0) this.vortexCooldown -= dt;
+        if (this.cloakTimer > 0) this.cloakTimer -= dt;
+        if (this.cloakCooldown > 0) this.cloakCooldown -= dt;
 
         // Weapon & Ammo Cooldown
         if (this.ammoCooldown > 0) this.ammoCooldown -= dt;
@@ -452,8 +475,11 @@ class CyberSnake {
 
         const isPhasing = this.phaseShiftTimer > 0 || this.warpOverdriveTimer > 0;
         const isShielded = this.spawnShieldTimer > 0 || this.empShieldTimer > 0;
+        const isCloaked = this.cloakTimer > 0;
 
-        if (isPhasing) {
+        if (isCloaked) {
+            ctx.globalAlpha = 0.22 + Math.sin(Date.now() * 0.02) * 0.1;
+        } else if (isPhasing) {
             ctx.globalAlpha = 0.5 + Math.sin(Date.now() * 0.015) * 0.25;
         }
 

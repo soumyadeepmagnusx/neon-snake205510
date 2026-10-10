@@ -374,6 +374,23 @@ class ParticleEngine {
         }
     }
 
+    spawnCloakDistortion(x, y) {
+        this.shockwaves.push(new Shockwave(x, y, '#a855f7', 85, 0.4));
+        for (let i = 0; i < 24; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            this.particles.push(new Particle(
+                x + (Math.random() - 0.5) * 30,
+                y + (Math.random() - 0.5) * 30,
+                (Math.random() - 0.5) * 3,
+                (Math.random() - 0.5) * 3,
+                Math.random() > 0.5 ? '#a855f7' : '#00f0ff',
+                Math.random() * 3 + 1.5,
+                0.4,
+                'spark'
+            ));
+        }
+    }
+
     spawnMineExplosion(x, y) {
         // High density explosive burst
         this.spawnExplosion(x, y, '#ff0055', 28);

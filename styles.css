@@ -783,6 +783,18 @@ canvas {
     color: #000;
 }
 
+.touch-btn.cloak-btn {
+    border: 2px solid #fff;
+    background: #581c87;
+    box-shadow: 4px 4px 0px #a855f7, 0 0 14px #a855f7;
+    color: #fff;
+}
+
+.touch-btn.cloak-btn:active {
+    background: #a855f7;
+    color: #000;
+}
+
 .touch-btn.drift-btn {
     border: 2px solid #fff;
     background: #0077ff;
