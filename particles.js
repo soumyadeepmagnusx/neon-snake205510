@@ -391,6 +391,28 @@ class ParticleEngine {
         }
     }
 
+    spawnChronoDashAfterimage(body, color = '#ffe600') {
+        if (!body || body.length === 0) return;
+        const head = body[0];
+        this.shockwaves.push(new Shockwave(head.pixelX, head.pixelY, '#ffe600', 95, 0.35));
+        for (let i = 0; i < Math.min(body.length, 6); i++) {
+            const seg = body[i];
+            for (let k = 0; k < 3; k++) {
+                if (this.particles.length >= this.maxParticles) break;
+                this.particles.push(new Particle(
+                    seg.pixelX + (Math.random() - 0.5) * 10,
+                    seg.pixelY + (Math.random() - 0.5) * 10,
+                    (Math.random() - 0.5) * 2,
+                    (Math.random() - 0.5) * 2,
+                    color,
+                    Math.random() * 3 + 2,
+                    0.35,
+                    'spark'
+                ));
+            }
+        }
+    }
+
     spawnMineExplosion(x, y) {
         // High density explosive burst
         this.spawnExplosion(x, y, '#ff0055', 28);

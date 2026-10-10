@@ -938,6 +938,29 @@ class CyberAudioEngine {
         osc.stop(now + 0.45);
     }
 
+    playChronoDash() {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+
+        // Hyper-acceleration warp transient
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.exponentialRampToValueAtTime(1100, now + 0.08);
+        osc.frequency.exponentialRampToValueAtTime(440, now + 0.22);
+
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+
+        osc.start(now);
+        osc.stop(now + 0.22);
+    }
+
     // Cyber Voice Announcer System
     announce(text, priority = false) {
         if (this.isMuted) return;

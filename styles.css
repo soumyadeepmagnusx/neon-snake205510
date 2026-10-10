@@ -795,6 +795,18 @@ canvas {
     color: #000;
 }
 
+.touch-btn.chrono-btn {
+    border: 2px solid #fff;
+    background: #eab308;
+    box-shadow: 4px 4px 0px #ffe600, 0 0 14px #ffe600;
+    color: #000;
+}
+
+.touch-btn.chrono-btn:active {
+    background: #ffe600;
+    color: #000;
+}
+
 .touch-btn.drift-btn {
     border: 2px solid #fff;
     background: #0077ff;

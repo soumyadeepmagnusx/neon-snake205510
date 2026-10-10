@@ -266,6 +266,11 @@ class NeonSnakeGame {
                     this.triggerPlayerThermalCloak(this.player1);
                 }
 
+                // Chrono Phase Dash (K)
+                if (e.code === 'KeyK') {
+                    this.triggerPlayerChronoDash(this.player1);
+                }
+
                 // Send P2P input if in online mode
                 if (this.mode === 'online' && !window.cyberP2P.isHost) {
                     window.cyberP2P.send({
@@ -436,6 +441,30 @@ class NeonSnakeGame {
         const triggered = snake.triggerThermalCloak();
         if (triggered && snake.body.length > 0) {
             this.cameraShake = Math.max(this.cameraShake, 0.3);
+            this.updateHUD();
+        }
+    }
+
+    triggerPlayerChronoDash(snake) {
+        if (!snake || !snake.isAlive || snake.body.length === 0) return;
+        const triggered = snake.triggerChronoDash();
+        if (triggered) {
+            this.cameraShake = Math.max(this.cameraShake, 0.45);
+            // Instant 3-cell forward leap
+            const dashSteps = 3;
+            for (let step = 0; step < dashSteps; step++) {
+                const nx = (snake.gridX + snake.dir.x + this.gridWidth) % this.gridWidth;
+                const ny = (snake.gridY + snake.dir.y + this.gridHeight) % this.gridHeight;
+                snake.gridX = nx;
+                snake.gridY = ny;
+                snake.body.unshift({
+                    x: nx,
+                    y: ny,
+                    pixelX: nx * this.cellSize + this.cellSize / 2,
+                    pixelY: ny * this.cellSize + this.cellSize / 2
+                });
+                snake.body.pop();
+            }
             this.updateHUD();
         }
     }
@@ -886,6 +915,14 @@ class NeonSnakeGame {
         if (cloakTouchBtn) {
             bindTouch('touchCloak', () => {
                 this.triggerPlayerThermalCloak(this.player1);
+            });
+        }
+
+        // Virtual Chrono Dash button
+        const chronoTouchBtn = document.getElementById('touchChrono');
+        if (chronoTouchBtn) {
+            bindTouch('touchChrono', () => {
+                this.triggerPlayerChronoDash(this.player1);
             });
         }
     }
@@ -2869,6 +2906,7 @@ class NeonSnakeGame {
             `PULSE NOVAS   : ${p?.pulseNovaCount || 0} DISCHARGES`,
             `VORTEX SIPHONS : ${p?.vortexSiphonCount || 0} GRAVITATIONAL HARVESTS`,
             `THERMAL CLOAKS : ${p?.cloakCount || 0} STEALTH CONCEALMENTS`,
+            `CHRONO DASHES  : ${p?.chronoDashCount || 0} PHASE LEAPS`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,

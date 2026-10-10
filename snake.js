@@ -76,6 +76,8 @@ class CyberSnake {
         this.cloakTimer = 0;
         this.cloakCooldown = 0;
         this.cloakCount = 0;
+        this.chronoDashCooldown = 0;
+        this.chronoDashCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -159,6 +161,23 @@ class CyberSnake {
         if (window.particleEngine) {
             window.particleEngine.spawnCloakDistortion(this.body[0].pixelX, this.body[0].pixelY);
             window.particleEngine.addText('👤 THERMAL CLOAK ACTIVE!', this.body[0].pixelX, this.body[0].pixelY - 24, '#a855f7', 18);
+        }
+        return true;
+    }
+
+    triggerChronoDash() {
+        if (this.chronoDashCooldown > 0 || !this.isAlive || this.body.length === 0) return false;
+        this.chronoDashCooldown = 5.0;
+        this.chronoDashCount = (this.chronoDashCount || 0) + 1;
+        this.score += 120;
+
+        if (window.cyberAudio) {
+            window.cyberAudio.playChronoDash();
+            if (this.id === 'player1') window.cyberAudio.announce('Chrono phase dash executed', true);
+        }
+        if (window.particleEngine) {
+            window.particleEngine.spawnChronoDashAfterimage(this.body, this.colorScheme.glow);
+            window.particleEngine.addText('⚡ CHRONO DASH!', this.body[0].pixelX, this.body[0].pixelY - 24, '#ffe600', 18);
         }
         return true;
     }
@@ -321,6 +340,7 @@ class CyberSnake {
         if (this.vortexCooldown > 0) this.vortexCooldown -= dt;
         if (this.cloakTimer > 0) this.cloakTimer -= dt;
         if (this.cloakCooldown > 0) this.cloakCooldown -= dt;
+        if (this.chronoDashCooldown > 0) this.chronoDashCooldown -= dt;
 
         // Weapon & Ammo Cooldown
         if (this.ammoCooldown > 0) this.ammoCooldown -= dt;
