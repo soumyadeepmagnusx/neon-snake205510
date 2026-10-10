@@ -62,6 +62,7 @@ class CyberSnake {
         this.mineChainCount = 0;
         this.warpOverdriveTimer = 0;
         this.warpOverdriveCount = 0;
+        this.railgunShotCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -131,6 +132,31 @@ class CyberSnake {
             color: this.colorScheme.glow,
             owner: this,
             life: 1.2
+        };
+    }
+
+    shootRailgun() {
+        if (this.ammo < 2 || this.ammoCooldown > 0 || !this.isAlive || this.body.length === 0) return null;
+        this.ammo -= 2;
+        this.ammoCooldown = 0.55;
+        this.railgunShotCount = (this.railgunShotCount || 0) + 1;
+        if (window.cyberAudio) {
+            window.cyberAudio.playRailgunFire();
+            if (this.id === 'player1') window.cyberAudio.announce('Railgun discharged', true);
+        }
+
+        return {
+            x: this.body[0].pixelX,
+            y: this.body[0].pixelY,
+            vx: this.dir.x * 22,
+            vy: this.dir.y * 22,
+            color: '#ffe600',
+            owner: this,
+            isRailgun: true,
+            pierceLimit: 5,
+            pierceCount: 0,
+            hitSnakes: new Set(),
+            life: 1.6
         };
     }
 

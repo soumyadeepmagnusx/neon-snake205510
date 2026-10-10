@@ -295,6 +295,25 @@ class ParticleEngine {
         }
     }
 
+    spawnRailgunImpact(x, y) {
+        this.shockwaves.push(new Shockwave(x, y, '#ffe600', 70, 0.4));
+        this.shockwaves.push(new Shockwave(x, y, '#00f0ff', 45, 0.25));
+        for (let i = 0; i < 24; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 7 + 2;
+            this.particles.push(new Particle(
+                x, y,
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed,
+                Math.random() > 0.5 ? '#ffe600' : '#00f0ff',
+                Math.random() * 3.5 + 2,
+                0.35,
+                'spark'
+            ));
+        }
+    }
+
     spawnMineExplosion(x, y) {
         // High density explosive burst
         this.spawnExplosion(x, y, '#ff0055', 28);

@@ -546,6 +546,42 @@ class CyberAudioEngine {
         osc.stop(now + 0.12);
     }
 
+    playRailgunFire() {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+
+        // Sub-bass heavy magnetic kick
+        const sub = this.ctx.createOscillator();
+        const subGain = this.ctx.createGain();
+        sub.type = 'sawtooth';
+        sub.frequency.setValueAtTime(220, now);
+        sub.frequency.exponentialRampToValueAtTime(32, now + 0.35);
+
+        subGain.gain.setValueAtTime(0.7, now);
+        subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+        sub.connect(subGain);
+        subGain.connect(this.sfxGain);
+        sub.start(now);
+        sub.stop(now + 0.35);
+
+        // High frequency magnetic discharge snap
+        const snap = this.ctx.createOscillator();
+        const snapGain = this.ctx.createGain();
+        snap.type = 'square';
+        snap.frequency.setValueAtTime(1800, now);
+        snap.frequency.exponentialRampToValueAtTime(150, now + 0.14);
+
+        snapGain.gain.setValueAtTime(0.45, now);
+        snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+
+        snap.connect(snapGain);
+        snapGain.connect(this.sfxGain);
+        snap.start(now);
+        snap.stop(now + 0.14);
+    }
+
     playPlasmaHit() {
         this.init();
         if (this.isMuted) return;

@@ -24,6 +24,7 @@ A high-octane synthwave & cyberpunk canvas arcade game built with vanilla JavaSc
   - Dynamic frequency visualizer spectrum rendered across the canvas background.
   - Procedural sound effects: food chime, turbo boost thrust roar, explosion impact, EMP shockwave, and phase warp tone.
 
+  - **⚡ Hyper-Drive Plasma Railgun**: Press `G` (or touch `RAILGUN`) to consume 2 ammo cores and discharge a hyper-velocity piercing particle beam. Blasts straight through lines of neon obstacles, deals +55 damage across multiple hostile snakes in a single shot (+300 bonus score per piercing strike), and features ionized sub-bass acoustics!
   - **🛡️ Kinetic Deflector Parry**: Press `V` (or touch `PARRY`) to deploy a rotating hexagonal barrier. Deflects incoming enemy plasma bolts back at the attacker at 1.5x velocity with electric matrix green sparks, awards +200 deflection points, and cuts through sweeping laser death beams!
   - **⚡ Temporal Matrix Overclock**: Hold `Z` or `X` (or touch `SLOW-MO`) to enter temporal bullet-time, slowing arena physics, hostile AI, and hazards down to 38% speed while you execute pinpoint evasive maneuvers!
   - **🌀 Linked Quantum Portals & Warp Overdrive**: Two active wormhole gates (`GATE α` [Cyan] and `GATE Ω` [Orange]) link across the arena with an animated chromatic spatial alignment vector beam. Traversing a portal triggers a 3.5s **Quantum Warp Overdrive** surge (+100 score, ghost invulnerability phase shimmer, concentric quantum rings, and dedicated HUD badge), plus vector guidance on the Holographic Tactical Radar!
@@ -87,6 +88,7 @@ A high-octane synthwave & cyberpunk canvas arcade game built with vanilla JavaSc
 | **Temporal Overclock** | `Z` or `X` | N/A | Left Trigger / `LT` | `SLOW-MO` Button |
 | **Drop Proximity Mine** | `E` or `Q` | N/A | `Y` Button | `MINE` Button |
 | **Shoot Plasma Cannon** | `F` or `J` | `L` or `Numpad 0` | Right Bumper / `RB` | `FIRE` Button |
+| **Hyper-Drive Railgun** | `G` | N/A | Left Trigger / `LT` | `RAILGUN` Button |
 | **Instant VCR Replay** | `R` (on Game Over) | N/A | N/A | `VCR REPLAY` Button |
 | **Pause / Resume** | `P` or `Escape` | `P` or `Escape` | `Start` Button | Tap anywhere |
 

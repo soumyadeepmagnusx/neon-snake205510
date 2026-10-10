@@ -728,6 +728,18 @@ canvas {
     color: #000;
 }
 
+.touch-btn.railgun-btn {
+    border: 2px solid #fff;
+    background: #b8860b;
+    box-shadow: 4px 4px 0px #ffe600, 0 0 14px #ffe600;
+    color: #fff;
+}
+
+.touch-btn.railgun-btn:active {
+    background: #ffe600;
+    color: #000;
+}
+
 .touch-btn.drift-btn {
     border: 2px solid #fff;
     background: #0077ff;

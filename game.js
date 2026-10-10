@@ -226,6 +226,11 @@ class NeonSnakeGame {
                     this.firePlayerPlasma(this.player1);
                 }
 
+                // Hyper Railgun Piercing Charge Beam (G)
+                if (e.code === 'KeyG') {
+                    this.firePlayerRailgun(this.player1);
+                }
+
                 // Deploy Proximity Cyber Mine (E or Q)
                 if (e.code === 'KeyE' || e.code === 'KeyQ') {
                     this.deployPlayerMine(this.player1);
@@ -323,6 +328,24 @@ class NeonSnakeGame {
         }
     }
 
+    firePlayerRailgun(snake) {
+        if (!snake || !snake.isAlive) return;
+        const proj = snake.shootRailgun();
+        if (proj) {
+            this.projectiles.push(proj);
+            this.cameraShake = Math.max(this.cameraShake, 0.45);
+            if (window.particleEngine) {
+                window.particleEngine.spawnRailgunImpact(proj.x, proj.y);
+                window.particleEngine.addText('⚡ HYPER RAILGUN!', proj.x, proj.y - 20, '#ffe600', 18);
+            }
+            this.updateHUD();
+        } else if (snake.ammo < 2 && snake === this.player1 && snake.body.length > 0) {
+            if (window.particleEngine) {
+                window.particleEngine.addText('NEED 2 AMMO', snake.body[0].pixelX, snake.body[0].pixelY - 18, '#ff0055', 13);
+            }
+        }
+    }
+
     pollGamepad() {
         if (!navigator.getGamepads) return;
         const gamepads = navigator.getGamepads();
@@ -377,6 +400,13 @@ class NeonSnakeGame {
             this.deployPlayerMine(this.player1);
         }
         this.gamepadLastButtons.mine = minePressed;
+
+        // Hyper Railgun (Left Trigger button 6)
+        const railgunPressed = gp.buttons[6]?.pressed;
+        if (railgunPressed && !this.gamepadLastButtons.railgun) {
+            this.firePlayerRailgun(this.player1);
+        }
+        this.gamepadLastButtons.railgun = railgunPressed;
     }
 
     setupEventListeners() {
@@ -705,6 +735,14 @@ class NeonSnakeGame {
         if (parryTouchBtn) {
             bindTouch('touchParry', () => {
                 if (this.player1) this.player1.triggerParry();
+            });
+        }
+
+        // Virtual Hyper Railgun button
+        const railgunTouchBtn = document.getElementById('touchRailgun');
+        if (railgunTouchBtn) {
+            bindTouch('touchRailgun', () => {
+                this.firePlayerRailgun(this.player1);
             });
         }
 
@@ -1457,13 +1495,21 @@ class NeonSnakeGame {
                 const obs = this.obstacles[oIdx];
                 if (obs.x === gridX && obs.y === gridY) {
                     this.obstacles.splice(oIdx, 1);
-                    window.particleEngine.spawnBurst(p.x, p.y, '#ff0055', 16, 4);
-                    window.particleEngine.addText('+20 BLAST', p.x, p.y, '#ff0055', 14);
-                    if (p.owner === this.player1) this.score += 20;
-                    this.projectiles.splice(i, 1);
-                    hitObstacle = true;
-                    if (window.cyberAudio) window.cyberAudio.playPlasmaHit();
-                    break;
+                    if (p.isRailgun) {
+                        window.particleEngine.spawnRailgunImpact(p.x, p.y);
+                        window.particleEngine.addText('+50 PIERCE!', p.x, p.y, '#ffe600', 15);
+                        if (p.owner === this.player1) this.score += 50;
+                        if (window.cyberAudio) window.cyberAudio.playRailgunFire();
+                        // Railgun pierces straight through obstacles without stopping!
+                    } else {
+                        window.particleEngine.spawnBurst(p.x, p.y, '#ff0055', 16, 4);
+                        window.particleEngine.addText('+20 BLAST', p.x, p.y, '#ff0055', 14);
+                        if (p.owner === this.player1) this.score += 20;
+                        this.projectiles.splice(i, 1);
+                        hitObstacle = true;
+                        if (window.cyberAudio) window.cyberAudio.playPlasmaHit();
+                        break;
+                    }
                 }
             }
             if (hitObstacle) continue;
@@ -1472,12 +1518,17 @@ class NeonSnakeGame {
             let hitSnake = false;
             for (const target of this.snakes) {
                 if (target === p.owner || !target.isAlive) continue;
+                if (p.isRailgun && p.hitSnakes && p.hitSnakes.has(target)) continue;
 
                 for (let sIdx = 0; sIdx < target.body.length; sIdx++) {
                     const seg = target.body[sIdx];
                     const dist = Math.hypot(p.x - seg.pixelX, p.y - seg.pixelY);
 
-                    if (dist < this.cellSize * 0.85) {
+                    if (dist < this.cellSize * (p.isRailgun ? 1.15 : 0.85)) {
+                        if (p.isRailgun && p.hitSnakes) {
+                            p.hitSnakes.add(target);
+                        }
+
                         // Tactical Kinetic Parry Deflection!
                         if (target.parryTimer > 0 && sIdx === 0) {
                             p.vx = -p.vx * 1.5;
@@ -1499,9 +1550,17 @@ class NeonSnakeGame {
                             break;
                         }
 
-                        const outcome = target.takeDamage(25);
-                        window.particleEngine.spawnBurst(p.x, p.y, p.color, 20, 5);
-                        this.cameraShake = Math.max(this.cameraShake, 0.3);
+                        const dmg = p.isRailgun ? 55 : 25;
+                        const outcome = target.takeDamage(dmg);
+                        if (p.isRailgun) {
+                            window.particleEngine.spawnRailgunImpact(p.x, p.y);
+                            window.particleEngine.addText('⚡ PIERCED! +300', p.x, p.y - 18, '#ffe600', 18);
+                            if (p.owner === this.player1) this.score += 300;
+                            this.cameraShake = Math.max(this.cameraShake, 0.45);
+                        } else {
+                            window.particleEngine.spawnBurst(p.x, p.y, p.color, 20, 5);
+                            this.cameraShake = Math.max(this.cameraShake, 0.3);
+                        }
 
                         if (outcome === 'destroyed') {
                             window.particleEngine.addText('+250 DESTROYED!', p.x, p.y, '#ff0055', 22);
@@ -1526,9 +1585,18 @@ class NeonSnakeGame {
                             window.particleEngine.addText('SHEARED!', p.x, p.y, '#ffe600', 16);
                         }
 
-                        this.projectiles.splice(i, 1);
-                        hitSnake = true;
-                        break;
+                        if (p.isRailgun) {
+                            p.pierceCount = (p.pierceCount || 0) + 1;
+                            if (p.pierceCount >= (p.pierceLimit || 5)) {
+                                this.projectiles.splice(i, 1);
+                                hitSnake = true;
+                                break;
+                            }
+                        } else {
+                            this.projectiles.splice(i, 1);
+                            hitSnake = true;
+                            break;
+                        }
                     }
                 }
                 if (hitSnake) break;
@@ -1926,15 +1994,35 @@ class NeonSnakeGame {
             ctx.shadowColor = p.color;
             ctx.fillStyle = '#ffffff';
 
-            // Plasma bolt capsule
-            const angle = Math.atan2(p.vy, p.vx);
-            ctx.rotate(angle);
-            ctx.fillStyle = p.color;
-            ctx.fillRect(-8, -3, 16, 6);
+            if (p.isRailgun) {
+                // Hyper-Drive Railgun Piercing Beam
+                const angle = Math.atan2(p.vy, p.vx);
+                ctx.rotate(angle);
+                ctx.shadowColor = '#00f0ff';
+                ctx.shadowBlur = 24;
+                ctx.fillStyle = '#ffe600';
+                ctx.fillRect(-24, -6, 48, 12);
 
-            // Core white hot line
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(-6, -1, 12, 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(-22, -2.5, 44, 5);
+
+                ctx.strokeStyle = '#00f0ff';
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.arc(-8, 0, 8, 0, Math.PI * 2);
+                ctx.arc(8, 0, 8, 0, Math.PI * 2);
+                ctx.stroke();
+            } else {
+                // Standard Plasma bolt capsule
+                const angle = Math.atan2(p.vy, p.vx);
+                ctx.rotate(angle);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-8, -3, 16, 6);
+
+                // Core white hot line
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(-6, -1, 12, 2);
+            }
 
             ctx.restore();
         }
@@ -2573,6 +2661,7 @@ class NeonSnakeGame {
             `KINETIC PARRIES: ${p?.parrySuccessCount || 0} DEFLECTIONS`,
             `EMP MINE CHAINS: ${p?.mineChainCount || 0} OVERLOADS`,
             `QUANTUM WARPS  : ${p?.warpOverdriveCount || 0} OVERDRIVES`,
+            `RAILGUN SHOTS  : ${p?.railgunShotCount || 0} PIERCING BURSTS`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,
