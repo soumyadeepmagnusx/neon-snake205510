@@ -849,6 +849,40 @@ class CyberAudioEngine {
         osc2.stop(now + 0.28);
     }
 
+    playPulseNova() {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+
+        const sub = this.ctx.createOscillator();
+        const subGain = this.ctx.createGain();
+        sub.type = 'sawtooth';
+        sub.frequency.setValueAtTime(180, now);
+        sub.frequency.exponentialRampToValueAtTime(30, now + 0.42);
+
+        subGain.gain.setValueAtTime(0.75, now);
+        subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
+
+        sub.connect(subGain);
+        subGain.connect(this.sfxGain);
+        sub.start(now);
+        sub.stop(now + 0.42);
+
+        const sweep = this.ctx.createOscillator();
+        const sweepGain = this.ctx.createGain();
+        sweep.type = 'sine';
+        sweep.frequency.setValueAtTime(800, now);
+        sweep.frequency.exponentialRampToValueAtTime(150, now + 0.35);
+
+        sweepGain.gain.setValueAtTime(0.45, now);
+        sweepGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+        sweep.connect(sweepGain);
+        sweepGain.connect(this.sfxGain);
+        sweep.start(now);
+        sweep.stop(now + 0.35);
+    }
+
     // Cyber Voice Announcer System
     announce(text, priority = false) {
         if (this.isMuted) return;

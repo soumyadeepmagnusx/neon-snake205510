@@ -759,6 +759,18 @@ canvas {
     color: #000;
 }
 
+.touch-btn.nova-btn {
+    border: 2px solid #fff;
+    background: #00f0ff;
+    box-shadow: 4px 4px 0px #ff007f, 0 0 14px #00f0ff;
+    color: #000;
+}
+
+.touch-btn.nova-btn:active {
+    background: #ff007f;
+    color: #fff;
+}
+
 .touch-btn.drift-btn {
     border: 2px solid #fff;
     background: #0077ff;

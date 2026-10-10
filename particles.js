@@ -332,6 +332,28 @@ class ParticleEngine {
         }
     }
 
+    spawnPulseNova(x, y) {
+        this.shockwaves.push(new Shockwave(x, y, '#00f0ff', 130, 0.55));
+        this.shockwaves.push(new Shockwave(x, y, '#ff007f', 90, 0.45));
+        this.shockwaves.push(new Shockwave(x, y, '#ffffff', 55, 0.3));
+
+        for (let i = 0; i < 36; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const angle = (i * Math.PI * 2) / 36;
+            const speed = Math.random() * 8 + 4;
+            this.particles.push(new Particle(
+                x, y,
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed,
+                i % 2 === 0 ? '#00f0ff' : '#ff007f',
+                Math.random() * 3 + 2,
+                0.45,
+                'spark'
+            ));
+        }
+        this.addText('⚡ PULSE NOVA! +150', x, y - 28, '#00f0ff', 20);
+    }
+
     spawnMineExplosion(x, y) {
         // High density explosive burst
         this.spawnExplosion(x, y, '#ff0055', 28);

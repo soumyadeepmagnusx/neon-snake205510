@@ -68,6 +68,8 @@ class CyberSnake {
         this.naniteCooldown = 0;
         this.naniteRepairCount = 0;
         this.overshield = false;
+        this.pulseNovaCooldown = 0;
+        this.pulseNovaCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -99,6 +101,22 @@ class CyberSnake {
         if (window.particleEngine) {
             window.particleEngine.spawnNaniteWeld(this.body[0].pixelX, this.body[0].pixelY);
             window.particleEngine.addText('⚡ NANITE DRONES ONLINE!', this.body[0].pixelX, this.body[0].pixelY - 24, '#39ff14', 16);
+        }
+        return true;
+    }
+
+    triggerPulseNova() {
+        if (this.pulseNovaCooldown > 0 || !this.isAlive || this.body.length === 0) return false;
+        this.pulseNovaCooldown = 6.0;
+        this.pulseNovaCount = (this.pulseNovaCount || 0) + 1;
+        this.score += 150;
+
+        if (window.cyberAudio) {
+            window.cyberAudio.playPulseNova();
+            if (this.id === 'player1') window.cyberAudio.announce('Kinetic pulse nova discharged', true);
+        }
+        if (window.particleEngine) {
+            window.particleEngine.spawnPulseNova(this.body[0].pixelX, this.body[0].pixelY);
         }
         return true;
     }
@@ -256,6 +274,7 @@ class CyberSnake {
             }
         }
         if (this.naniteCooldown > 0) this.naniteCooldown -= dt;
+        if (this.pulseNovaCooldown > 0) this.pulseNovaCooldown -= dt;
 
         // Weapon & Ammo Cooldown
         if (this.ammoCooldown > 0) this.ammoCooldown -= dt;

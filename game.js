@@ -251,6 +251,11 @@ class NeonSnakeGame {
                     this.player1.triggerNanites();
                 }
 
+                // Cyber Shockwave Pulse Nova (T)
+                if (e.code === 'KeyT') {
+                    this.triggerPlayerPulseNova(this.player1);
+                }
+
                 // Send P2P input if in online mode
                 if (this.mode === 'online' && !window.cyberP2P.isHost) {
                     window.cyberP2P.send({
@@ -348,6 +353,62 @@ class NeonSnakeGame {
             if (window.particleEngine) {
                 window.particleEngine.addText('NEED 2 AMMO', snake.body[0].pixelX, snake.body[0].pixelY - 18, '#ff0055', 13);
             }
+        }
+    }
+
+    triggerPlayerPulseNova(snake) {
+        if (!snake || !snake.isAlive) return;
+        const triggered = snake.triggerPulseNova();
+        if (triggered && snake.body.length > 0) {
+            const hx = snake.body[0].pixelX;
+            const hy = snake.body[0].pixelY;
+            this.cameraShake = Math.max(this.cameraShake, 0.5);
+
+            // 1. Shatter nearby obstacles
+            const novaRadius = this.cellSize * 5.0;
+            this.obstacles = this.obstacles.filter(obs => {
+                const ox = obs.x * this.cellSize + this.cellSize / 2;
+                const oy = obs.y * this.cellSize + this.cellSize / 2;
+                if (Math.hypot(ox - hx, oy - hy) <= novaRadius) {
+                    if (window.particleEngine) {
+                        window.particleEngine.spawnBurst(ox, oy, '#00f0ff', 12, 3);
+                    }
+                    if (snake === this.player1) this.score += 25;
+                    return false;
+                }
+                return true;
+            });
+
+            // 2. Repel and redirect incoming projectiles
+            for (const p of this.projectiles) {
+                if (Math.hypot(p.x - hx, p.y - hy) <= novaRadius * 1.3) {
+                    const angle = Math.atan2(p.y - hy, p.x - hx);
+                    const speed = Math.hypot(p.vx, p.vy) * 1.4;
+                    p.vx = Math.cos(angle) * speed;
+                    p.vy = Math.sin(angle) * speed;
+                    p.owner = snake;
+                    p.color = '#00f0ff';
+                    p.life = 1.2;
+                    if (window.particleEngine) {
+                        window.particleEngine.spawnBurst(p.x, p.y, '#00f0ff', 6, 2);
+                    }
+                }
+            }
+
+            // 3. Repel and stun enemy snakes
+            for (const other of this.snakes) {
+                if (other === snake || !other.isAlive || other.body.length === 0) continue;
+                const dist = Math.hypot(other.body[0].pixelX - hx, other.body[0].pixelY - hy);
+                if (dist <= novaRadius * 1.2) {
+                    other.moveTimer = -0.55;
+                    other.takeDamage(35);
+                    if (window.particleEngine) {
+                        window.particleEngine.addText('REPULSED!', other.body[0].pixelX, other.body[0].pixelY - 20, '#ff007f', 16);
+                    }
+                }
+            }
+
+            this.updateHUD();
         }
     }
 
@@ -773,6 +834,14 @@ class NeonSnakeGame {
         if (repairTouchBtn) {
             bindTouch('touchRepair', () => {
                 if (this.player1) this.player1.triggerNanites();
+            });
+        }
+
+        // Virtual Cyber Shockwave Nova button
+        const novaTouchBtn = document.getElementById('touchNova');
+        if (novaTouchBtn) {
+            bindTouch('touchNova', () => {
+                this.triggerPlayerPulseNova(this.player1);
             });
         }
     }
@@ -2702,6 +2771,7 @@ class NeonSnakeGame {
             `QUANTUM WARPS  : ${p?.warpOverdriveCount || 0} OVERDRIVES`,
             `RAILGUN SHOTS  : ${p?.railgunShotCount || 0} PIERCING BURSTS`,
             `NANITE REPAIRS : ${p?.naniteRepairCount || 0} RECONSTRUCTIONS`,
+            `PULSE NOVAS   : ${p?.pulseNovaCount || 0} DISCHARGES`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,
