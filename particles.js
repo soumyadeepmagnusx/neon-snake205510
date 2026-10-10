@@ -314,6 +314,24 @@ class ParticleEngine {
         }
     }
 
+    spawnNaniteWeld(x, y) {
+        this.shockwaves.push(new Shockwave(x, y, '#39ff14', 45, 0.35));
+        for (let i = 0; i < 16; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 4 + 1.5;
+            this.particles.push(new Particle(
+                x, y,
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed,
+                Math.random() > 0.4 ? '#39ff14' : '#00f0ff',
+                Math.random() * 2.5 + 1.5,
+                0.35,
+                'spark'
+            ));
+        }
+    }
+
     spawnMineExplosion(x, y) {
         // High density explosive burst
         this.spawnExplosion(x, y, '#ff0055', 28);

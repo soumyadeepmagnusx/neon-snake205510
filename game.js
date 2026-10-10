@@ -246,6 +246,11 @@ class NeonSnakeGame {
                     this.player1.setOverclock(true);
                 }
 
+                // Nanite Repair Drone Swarm (H or N)
+                if (e.code === 'KeyH' || e.code === 'KeyN') {
+                    this.player1.triggerNanites();
+                }
+
                 // Send P2P input if in online mode
                 if (this.mode === 'online' && !window.cyberP2P.isHost) {
                     window.cyberP2P.send({
@@ -762,6 +767,14 @@ class NeonSnakeGame {
             overclockBtn.addEventListener('mousedown', startOverclock);
             overclockBtn.addEventListener('mouseup', endOverclock);
         }
+
+        // Virtual Nanite Repair button
+        const repairTouchBtn = document.getElementById('touchRepair');
+        if (repairTouchBtn) {
+            bindTouch('touchRepair', () => {
+                if (this.player1) this.player1.triggerNanites();
+            });
+        }
     }
 
     setMode(mode) {
@@ -1259,8 +1272,25 @@ class NeonSnakeGame {
     }
 
     onSnakeMoveStep(snake, newHeadX, newHeadY, gridWidth, gridHeight) {
-        const isPhasing = snake.phaseShiftTimer > 0;
+        const isPhasing = snake.phaseShiftTimer > 0 || snake.warpOverdriveTimer > 0;
         const isShielded = snake.spawnShieldTimer > 0 || snake.empShieldTimer > 0;
+
+        const checkOvershieldSave = () => {
+            if (snake.overshield) {
+                snake.overshield = false;
+                if (window.particleEngine && snake.body.length > 0) {
+                    window.particleEngine.spawnBurst(snake.body[0].pixelX, snake.body[0].pixelY, '#39ff14', 22, 5);
+                    window.particleEngine.addText('🛡️ OVERSHIELD SAVED!', snake.body[0].pixelX, snake.body[0].pixelY - 22, '#39ff14', 18);
+                }
+                if (window.cyberAudio) {
+                    window.cyberAudio.playParry();
+                    if (snake === this.player1) window.cyberAudio.announce('Overshield absorbed impact', true);
+                }
+                this.cameraShake = Math.max(this.cameraShake, 0.4);
+                return true;
+            }
+            return false;
+        };
 
         // 1. Arena boundary check
         if (newHeadX < 0 || newHeadX >= gridWidth || newHeadY < 0 || newHeadY >= gridHeight) {
@@ -1268,6 +1298,7 @@ class NeonSnakeGame {
                 this.unlockAchievement('phaseWalker');
                 return true;
             } else if (!isShielded) {
+                if (checkOvershieldSave()) return true;
                 this.cameraShake = 0.35;
                 snake.kill();
                 this.checkGameOver();
@@ -1311,6 +1342,7 @@ class NeonSnakeGame {
                 if (isPhasing) {
                     this.unlockAchievement('phaseWalker');
                 } else if (!isShielded) {
+                    if (checkOvershieldSave()) return true;
                     this.cameraShake = 0.4;
                     snake.kill();
                     this.checkGameOver();
@@ -1338,6 +1370,7 @@ class NeonSnakeGame {
 
                     // Body collision
                     if (!isPhasing && !isShielded) {
+                        if (checkOvershieldSave()) return true;
                         this.cameraShake = 0.45;
                         snake.kill();
                         if (other !== snake) {
@@ -2630,6 +2663,12 @@ class NeonSnakeGame {
                 if (this.player1.warpOverdriveTimer > 0) {
                     badges += `<span class="badge warp" style="border-color:#00f0ff; color:#00f0ff; box-shadow:0 0 10px #00f0ff;">WARP OVERDRIVE (${Math.ceil(this.player1.warpOverdriveTimer)}s)</span>`;
                 }
+                if (this.player1.naniteTimer > 0) {
+                    badges += `<span class="badge nanite">NANITES (${Math.ceil(this.player1.naniteTimer)}s)</span>`;
+                }
+                if (this.player1.overshield) {
+                    badges += `<span class="badge shield" style="border-color:#39ff14; color:#39ff14; box-shadow:0 0 10px #39ff14;">OVERSHIELD</span>`;
+                }
                 if (this.player1.isOverclocked) {
                     badges += `<span class="badge overclock" style="border-color:#ff007f; color:#ff007f; box-shadow:0 0 10px #ff007f;">OVERCLOCK 38%</span>`;
                 }
@@ -2662,6 +2701,7 @@ class NeonSnakeGame {
             `EMP MINE CHAINS: ${p?.mineChainCount || 0} OVERLOADS`,
             `QUANTUM WARPS  : ${p?.warpOverdriveCount || 0} OVERDRIVES`,
             `RAILGUN SHOTS  : ${p?.railgunShotCount || 0} PIERCING BURSTS`,
+            `NANITE REPAIRS : ${p?.naniteRepairCount || 0} RECONSTRUCTIONS`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,

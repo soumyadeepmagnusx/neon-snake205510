@@ -63,6 +63,11 @@ class CyberSnake {
         this.warpOverdriveTimer = 0;
         this.warpOverdriveCount = 0;
         this.railgunShotCount = 0;
+        this.naniteTimer = 0;
+        this.nanitePulseTimer = 0;
+        this.naniteCooldown = 0;
+        this.naniteRepairCount = 0;
+        this.overshield = false;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -78,6 +83,22 @@ class CyberSnake {
         if (window.cyberAudio) window.cyberAudio.playParry();
         if (window.particleEngine) {
             window.particleEngine.addText('PARRY READY', this.body[0].pixelX, this.body[0].pixelY - 22, '#00f0ff', 13);
+        }
+        return true;
+    }
+
+    triggerNanites() {
+        if (this.naniteCooldown > 0 || !this.isAlive || this.body.length === 0) return false;
+        this.naniteTimer = 8.0;
+        this.naniteCooldown = 14.0;
+        this.overshield = true;
+        if (window.cyberAudio) {
+            window.cyberAudio.playNaniteRepair();
+            if (this.id === 'player1') window.cyberAudio.announce('Nanite repair drone swarm deployed', true);
+        }
+        if (window.particleEngine) {
+            window.particleEngine.spawnNaniteWeld(this.body[0].pixelX, this.body[0].pixelY);
+            window.particleEngine.addText('⚡ NANITE DRONES ONLINE!', this.body[0].pixelX, this.body[0].pixelY - 24, '#39ff14', 16);
         }
         return true;
     }
@@ -216,6 +237,25 @@ class CyberSnake {
                 window.particleEngine.spawnTemporalDistortion(this.body[0].pixelX, this.body[0].pixelY);
             }
         }
+
+        // Nanite Repair Drone Swarm
+        if (this.naniteTimer > 0) {
+            this.naniteTimer -= dt;
+            this.nanitePulseTimer = (this.nanitePulseTimer || 0) + dt;
+            if (this.nanitePulseTimer >= 1.6) {
+                this.nanitePulseTimer = 0;
+                this.grow(1);
+                this.overshield = true;
+                this.naniteRepairCount = (this.naniteRepairCount || 0) + 1;
+                this.score += 50;
+                if (window.particleEngine && this.body.length > 0) {
+                    window.particleEngine.spawnNaniteWeld(this.body[0].pixelX, this.body[0].pixelY);
+                    window.particleEngine.addText('⚡ REPAIRED +1', this.body[0].pixelX, this.body[0].pixelY - 22, '#39ff14', 14);
+                }
+                if (window.cyberAudio) window.cyberAudio.playNaniteRepair();
+            }
+        }
+        if (this.naniteCooldown > 0) this.naniteCooldown -= dt;
 
         // Weapon & Ammo Cooldown
         if (this.ammoCooldown > 0) this.ammoCooldown -= dt;
@@ -663,6 +703,54 @@ class CyberSnake {
             ctx.strokeStyle = '#ff7700';
             ctx.lineWidth = 2;
             ctx.shadowColor = '#ff7700';
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Autonomous Orbiting Nanite Repair Drones
+        if (this.naniteTimer > 0 && this.body.length > 0) {
+            const head = this.body[0];
+            ctx.save();
+            ctx.translate(head.pixelX, head.pixelY);
+            const droneOrbitRadius = cellSize * 1.55;
+            const time = Date.now() * 0.007;
+            for (let d = 0; d < 3; d++) {
+                const angle = time + (d * Math.PI * 2) / 3;
+                const dx = Math.cos(angle) * droneOrbitRadius;
+                const dy = Math.sin(angle) * droneOrbitRadius;
+
+                // Drone glow & core
+                ctx.fillStyle = '#39ff14';
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = '#39ff14';
+                ctx.beginPath();
+                ctx.arc(dx, dy, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Connecting beam to head
+                ctx.strokeStyle = 'rgba(57, 255, 20, 0.4)';
+                ctx.lineWidth = 1.2;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(dx, dy);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // Ablative Overshield Barrier
+        if (this.overshield && this.body.length > 0) {
+            const head = this.body[0];
+            ctx.save();
+            ctx.translate(head.pixelX, head.pixelY);
+            ctx.rotate(Date.now() * 0.005);
+            ctx.beginPath();
+            ctx.arc(0, 0, cellSize * 1.4, 0, Math.PI * 2);
+            ctx.strokeStyle = '#39ff14';
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#39ff14';
+            ctx.setLineDash([5, 5]);
             ctx.stroke();
             ctx.restore();
         }
