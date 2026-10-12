@@ -992,6 +992,28 @@ class CyberAudioEngine {
         osc2.stop(now + 0.28);
     }
 
+    playCryoFreeze() {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+
+        // Crystalline glassy frost sound
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1200, now);
+        osc.frequency.exponentialRampToValueAtTime(320, now + 0.35);
+
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+
+        osc.start(now);
+        osc.stop(now + 0.35);
+    }
+
     // Cyber Voice Announcer System
     announce(text, priority = false) {
         if (this.isMuted) return;

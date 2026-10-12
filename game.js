@@ -276,6 +276,11 @@ class NeonSnakeGame {
                     this.triggerPlayerTeslaChain(this.player1);
                 }
 
+                // Cryogenic Sub-Zero Freeze Field (O)
+                if (e.code === 'KeyO') {
+                    this.triggerPlayerCryoField(this.player1);
+                }
+
                 // Send P2P input if in online mode
                 if (this.mode === 'online' && !window.cyberP2P.isHost) {
                     window.cyberP2P.send({
@@ -515,6 +520,35 @@ class NeonSnakeGame {
                 return true;
             });
 
+            this.updateHUD();
+        }
+    }
+
+    triggerPlayerCryoField(snake) {
+        if (!snake || !snake.isAlive || snake.body.length === 0) return;
+        const triggered = snake.triggerCryoField();
+        if (triggered) {
+            this.cameraShake = Math.max(this.cameraShake, 0.35);
+            const hx = snake.body[0].pixelX;
+            const hy = snake.body[0].pixelY;
+            const freezeRadius = this.cellSize * 6.0;
+
+            // Freeze/slow all enemy snakes and extinguish hazards
+            for (const other of this.snakes) {
+                if (other === snake || !other.isAlive || other.body.length === 0) continue;
+                const ox = other.body[0].pixelX;
+                const oy = other.body[0].pixelY;
+                const dist = Math.hypot(ox - hx, oy - hy);
+
+                if (dist <= freezeRadius) {
+                    other.moveTimer = -1.2; // 1.2s complete deep freeze!
+                    other.takeDamage(25);
+                    if (window.particleEngine) {
+                        window.particleEngine.spawnCryoFrostBurst(ox, oy);
+                        window.particleEngine.addText('❄️ FROZEN! -25HP', ox, oy - 22, '#7dd3fc', 16);
+                    }
+                }
+            }
             this.updateHUD();
         }
     }
@@ -981,6 +1015,14 @@ class NeonSnakeGame {
         if (teslaTouchBtn) {
             bindTouch('touchTesla', () => {
                 this.triggerPlayerTeslaChain(this.player1);
+            });
+        }
+
+        // Virtual Cryo Freeze button
+        const cryoTouchBtn = document.getElementById('touchCryo');
+        if (cryoTouchBtn) {
+            bindTouch('touchCryo', () => {
+                this.triggerPlayerCryoField(this.player1);
             });
         }
     }
@@ -2919,6 +2961,9 @@ class NeonSnakeGame {
                 if (this.player1.cloakTimer > 0) {
                     badges += `<span class="badge cloak" style="border-color:#a855f7; color:#a855f7; box-shadow:0 0 10px #a855f7;">THERMAL CLOAK (${Math.ceil(this.player1.cloakTimer)}s)</span>`;
                 }
+                if (this.player1.cryoFieldTimer > 0) {
+                    badges += `<span class="badge cryo" style="border-color:#7dd3fc; color:#7dd3fc; box-shadow:0 0 10px #7dd3fc;">CRYO FREEZE (${Math.ceil(this.player1.cryoFieldTimer)}s)</span>`;
+                }
                 if (this.player1.warpOverdriveTimer > 0) {
                     badges += `<span class="badge warp" style="border-color:#00f0ff; color:#00f0ff; box-shadow:0 0 10px #00f0ff;">WARP OVERDRIVE (${Math.ceil(this.player1.warpOverdriveTimer)}s)</span>`;
                 }
@@ -2966,6 +3011,7 @@ class NeonSnakeGame {
             `THERMAL CLOAKS : ${p?.cloakCount || 0} STEALTH CONCEALMENTS`,
             `CHRONO DASHES  : ${p?.chronoDashCount || 0} PHASE LEAPS`,
             `TESLA CHAINS   : ${p?.teslaChainCount || 0} ARC DISCHARGES`,
+            `CRYO FREEZES   : ${p?.cryoFieldCount || 0} SUB-ZERO BURSTS`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,

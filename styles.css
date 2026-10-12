@@ -819,6 +819,18 @@ canvas {
     color: #000;
 }
 
+.touch-btn.cryo-btn {
+    border: 2px solid #fff;
+    background: #0369a1;
+    box-shadow: 4px 4px 0px #7dd3fc, 0 0 14px #7dd3fc;
+    color: #fff;
+}
+
+.touch-btn.cryo-btn:active {
+    background: #7dd3fc;
+    color: #000;
+}
+
 .touch-btn.drift-btn {
     border: 2px solid #fff;
     background: #0077ff;

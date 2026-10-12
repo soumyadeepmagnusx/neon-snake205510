@@ -80,6 +80,9 @@ class CyberSnake {
         this.chronoDashCount = 0;
         this.teslaChainCooldown = 0;
         this.teslaChainCount = 0;
+        this.cryoFieldTimer = 0;
+        this.cryoFieldCooldown = 0;
+        this.cryoFieldCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -197,6 +200,24 @@ class CyberSnake {
         if (window.particleEngine) {
             window.particleEngine.spawnTeslaNova(this.body[0].pixelX, this.body[0].pixelY);
             window.particleEngine.addText('⚡ TESLA ARC CHAIN! +180', this.body[0].pixelX, this.body[0].pixelY - 24, '#00f0ff', 18);
+        }
+        return true;
+    }
+
+    triggerCryoField() {
+        if (this.cryoFieldCooldown > 0 || !this.isAlive || this.body.length === 0) return false;
+        this.cryoFieldTimer = 4.0;
+        this.cryoFieldCooldown = 8.5;
+        this.cryoFieldCount = (this.cryoFieldCount || 0) + 1;
+        this.score += 160;
+
+        if (window.cyberAudio) {
+            window.cyberAudio.playCryoFreeze();
+            if (this.id === 'player1') window.cyberAudio.announce('Cryogenic sub-zero freeze field engaged', true);
+        }
+        if (window.particleEngine) {
+            window.particleEngine.spawnCryoFrostBurst(this.body[0].pixelX, this.body[0].pixelY);
+            window.particleEngine.addText('❄️ CRYO FREEZE! +160', this.body[0].pixelX, this.body[0].pixelY - 24, '#7dd3fc', 18);
         }
         return true;
     }
@@ -361,6 +382,8 @@ class CyberSnake {
         if (this.cloakCooldown > 0) this.cloakCooldown -= dt;
         if (this.chronoDashCooldown > 0) this.chronoDashCooldown -= dt;
         if (this.teslaChainCooldown > 0) this.teslaChainCooldown -= dt;
+        if (this.cryoFieldTimer > 0) this.cryoFieldTimer -= dt;
+        if (this.cryoFieldCooldown > 0) this.cryoFieldCooldown -= dt;
 
         // Weapon & Ammo Cooldown
         if (this.ammoCooldown > 0) this.ammoCooldown -= dt;
@@ -850,6 +873,38 @@ class CyberSnake {
                 ctx.shadowBlur = 10;
                 ctx.shadowColor = arm % 2 === 0 ? '#00f0ff' : '#ffe600';
                 ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // Cryogenic Sub-Zero Frost Aura
+        if (this.cryoFieldTimer > 0 && this.body.length > 0) {
+            const head = this.body[0];
+            ctx.save();
+            ctx.translate(head.pixelX, head.pixelY);
+            ctx.rotate(Date.now() * 0.003);
+
+            const frostRadius = cellSize * 2.6;
+            ctx.beginPath();
+            ctx.arc(0, 0, frostRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(125, 211, 252, 0.6)';
+            ctx.lineWidth = 2.2;
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = '#38bdf8';
+            ctx.setLineDash([6, 6]);
+            ctx.stroke();
+
+            // 6-pointed crystalline snowflake nodes
+            for (let i = 0; i < 6; i++) {
+                const a = (i * Math.PI) / 3;
+                const fx = Math.cos(a) * frostRadius;
+                const fy = Math.sin(a) * frostRadius;
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = '#38bdf8';
+                ctx.beginPath();
+                ctx.arc(fx, fy, 3, 0, Math.PI * 2);
+                ctx.fill();
             }
             ctx.restore();
         }
