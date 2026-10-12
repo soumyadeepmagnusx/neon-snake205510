@@ -271,6 +271,11 @@ class NeonSnakeGame {
                     this.triggerPlayerChronoDash(this.player1);
                 }
 
+                // Tesla Arc Lightning Chain (I)
+                if (e.code === 'KeyI') {
+                    this.triggerPlayerTeslaChain(this.player1);
+                }
+
                 // Send P2P input if in online mode
                 if (this.mode === 'online' && !window.cyberP2P.isHost) {
                     window.cyberP2P.send({
@@ -465,6 +470,51 @@ class NeonSnakeGame {
                 });
                 snake.body.pop();
             }
+            this.updateHUD();
+        }
+    }
+
+    triggerPlayerTeslaChain(snake) {
+        if (!snake || !snake.isAlive || snake.body.length === 0) return;
+        const triggered = snake.triggerTeslaChain();
+        if (triggered) {
+            this.cameraShake = Math.max(this.cameraShake, 0.4);
+            const hx = snake.body[0].pixelX;
+            const hy = snake.body[0].pixelY;
+            const zapRadius = this.cellSize * 6.5;
+
+            // Chain arc to hostile snakes
+            for (const other of this.snakes) {
+                if (other === snake || !other.isAlive || other.body.length === 0) continue;
+                const ox = other.body[0].pixelX;
+                const oy = other.body[0].pixelY;
+                const dist = Math.hypot(ox - hx, oy - hy);
+
+                if (dist <= zapRadius) {
+                    other.takeDamage(40);
+                    other.moveTimer = -0.5; // Stun
+                    if (window.particleEngine) {
+                        window.particleEngine.spawnElectricArc(hx, hy, ox, oy, '#00f0ff');
+                        window.particleEngine.addText('⚡ SHOCKED! -40HP', ox, oy - 22, '#00f0ff', 16);
+                    }
+                }
+            }
+
+            // Shatter nearby obstacles with lightning
+            this.obstacles = this.obstacles.filter(obs => {
+                const ox = obs.x * this.cellSize + this.cellSize / 2;
+                const oy = obs.y * this.cellSize + this.cellSize / 2;
+                if (Math.hypot(ox - hx, oy - hy) <= zapRadius * 0.75) {
+                    if (window.particleEngine) {
+                        window.particleEngine.spawnElectricArc(hx, hy, ox, oy, '#00f0ff');
+                        window.particleEngine.spawnBurst(ox, oy, '#00f0ff', 10, 3);
+                    }
+                    if (snake === this.player1) this.score += 20;
+                    return false;
+                }
+                return true;
+            });
+
             this.updateHUD();
         }
     }
@@ -923,6 +973,14 @@ class NeonSnakeGame {
         if (chronoTouchBtn) {
             bindTouch('touchChrono', () => {
                 this.triggerPlayerChronoDash(this.player1);
+            });
+        }
+
+        // Virtual Tesla Chain button
+        const teslaTouchBtn = document.getElementById('touchTesla');
+        if (teslaTouchBtn) {
+            bindTouch('touchTesla', () => {
+                this.triggerPlayerTeslaChain(this.player1);
             });
         }
     }
@@ -2907,6 +2965,7 @@ class NeonSnakeGame {
             `VORTEX SIPHONS : ${p?.vortexSiphonCount || 0} GRAVITATIONAL HARVESTS`,
             `THERMAL CLOAKS : ${p?.cloakCount || 0} STEALTH CONCEALMENTS`,
             `CHRONO DASHES  : ${p?.chronoDashCount || 0} PHASE LEAPS`,
+            `TESLA CHAINS   : ${p?.teslaChainCount || 0} ARC DISCHARGES`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,

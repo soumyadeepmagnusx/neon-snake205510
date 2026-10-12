@@ -78,6 +78,8 @@ class CyberSnake {
         this.cloakCount = 0;
         this.chronoDashCooldown = 0;
         this.chronoDashCount = 0;
+        this.teslaChainCooldown = 0;
+        this.teslaChainCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -178,6 +180,23 @@ class CyberSnake {
         if (window.particleEngine) {
             window.particleEngine.spawnChronoDashAfterimage(this.body, this.colorScheme.glow);
             window.particleEngine.addText('⚡ CHRONO DASH!', this.body[0].pixelX, this.body[0].pixelY - 24, '#ffe600', 18);
+        }
+        return true;
+    }
+
+    triggerTeslaChain() {
+        if (this.teslaChainCooldown > 0 || !this.isAlive || this.body.length === 0) return false;
+        this.teslaChainCooldown = 6.5;
+        this.teslaChainCount = (this.teslaChainCount || 0) + 1;
+        this.score += 180;
+
+        if (window.cyberAudio) {
+            window.cyberAudio.playTeslaDischarge();
+            if (this.id === 'player1') window.cyberAudio.announce('Tesla arc lightning chain discharged', true);
+        }
+        if (window.particleEngine) {
+            window.particleEngine.spawnTeslaNova(this.body[0].pixelX, this.body[0].pixelY);
+            window.particleEngine.addText('⚡ TESLA ARC CHAIN! +180', this.body[0].pixelX, this.body[0].pixelY - 24, '#00f0ff', 18);
         }
         return true;
     }
@@ -341,6 +360,7 @@ class CyberSnake {
         if (this.cloakTimer > 0) this.cloakTimer -= dt;
         if (this.cloakCooldown > 0) this.cloakCooldown -= dt;
         if (this.chronoDashCooldown > 0) this.chronoDashCooldown -= dt;
+        if (this.teslaChainCooldown > 0) this.teslaChainCooldown -= dt;
 
         // Weapon & Ammo Cooldown
         if (this.ammoCooldown > 0) this.ammoCooldown -= dt;

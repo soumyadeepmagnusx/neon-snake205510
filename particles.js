@@ -413,6 +413,26 @@ class ParticleEngine {
         }
     }
 
+    spawnTeslaNova(x, y) {
+        this.shockwaves.push(new Shockwave(x, y, '#00f0ff', 120, 0.45));
+        this.shockwaves.push(new Shockwave(x, y, '#ffffff', 80, 0.3));
+
+        for (let i = 0; i < 32; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const angle = (i * Math.PI * 2) / 32;
+            const speed = Math.random() * 6 + 3;
+            this.particles.push(new Particle(
+                x, y,
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed,
+                i % 2 === 0 ? '#00f0ff' : '#ffffff',
+                Math.random() * 3 + 2,
+                0.4,
+                'spark'
+            ));
+        }
+    }
+
     spawnMineExplosion(x, y) {
         // High density explosive burst
         this.spawnExplosion(x, y, '#ff0055', 28);

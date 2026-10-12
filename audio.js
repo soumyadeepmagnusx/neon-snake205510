@@ -961,6 +961,37 @@ class CyberAudioEngine {
         osc.stop(now + 0.22);
     }
 
+    playTeslaDischarge() {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+
+        // High frequency buzzing electric arc discharge
+        const osc1 = this.ctx.createOscillator();
+        const osc2 = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc1.type = 'sawtooth';
+        osc1.frequency.setValueAtTime(550, now);
+        osc1.frequency.linearRampToValueAtTime(140, now + 0.28);
+
+        osc2.type = 'square';
+        osc2.frequency.setValueAtTime(275, now);
+        osc2.frequency.linearRampToValueAtTime(70, now + 0.28);
+
+        gain.gain.setValueAtTime(0.45, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(this.sfxGain);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 0.28);
+        osc2.stop(now + 0.28);
+    }
+
     // Cyber Voice Announcer System
     announce(text, priority = false) {
         if (this.isMuted) return;
