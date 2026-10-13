@@ -843,6 +843,18 @@ canvas {
     color: #000;
 }
 
+.touch-btn.satellite-btn {
+    border: 2px solid #fff;
+    background: #0284c7;
+    box-shadow: 4px 4px 0px #38bdf8, 0 0 14px #38bdf8;
+    color: #fff;
+}
+
+.touch-btn.satellite-btn:active {
+    background: #38bdf8;
+    color: #000;
+}
+
 .touch-btn.drift-btn {
     border: 2px solid #fff;
     background: #0077ff;

@@ -451,6 +451,31 @@ class ParticleEngine {
         }
     }
 
+    spawnOrbitalSatellitesActivation(x, y) {
+        this.shockwaves.push(new Shockwave(x, y, '#38bdf8', 95, 0.45));
+        this.shockwaves.push(new Shockwave(x, y, '#ffffff', 55, 0.25));
+
+        for (let i = 0; i < 24; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const angle = (i * Math.PI * 2) / 24;
+            const speed = Math.random() * 5 + 3;
+            this.particles.push(new Particle(
+                x, y,
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed,
+                i % 2 === 0 ? '#38bdf8' : '#ffffff',
+                Math.random() * 3 + 2,
+                0.4,
+                'spark'
+            ));
+        }
+    }
+
+    spawnSatelliteLaserArc(x1, y1, x2, y2) {
+        this.spawnElectricArc(x1, y1, x2, y2, '#38bdf8');
+        this.spawnBurst(x2, y2, '#38bdf8', 8, 2.5);
+    }
+
     spawnTeslaNova(x, y) {
         this.shockwaves.push(new Shockwave(x, y, '#00f0ff', 120, 0.45));
         this.shockwaves.push(new Shockwave(x, y, '#ffffff', 80, 0.3));

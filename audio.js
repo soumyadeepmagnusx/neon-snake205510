@@ -1040,6 +1040,32 @@ class CyberAudioEngine {
         }
     }
 
+    playOrbitalSatellites() {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+
+        // Dual rotating frequency chirp synth
+        for (let i = 0; i < 2; i++) {
+            const time = now + i * 0.08;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(i === 0 ? 520 : 780, time);
+            osc.frequency.exponentialRampToValueAtTime(i === 0 ? 1200 : 1600, time + 0.16);
+
+            gain.gain.setValueAtTime(0.28, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.16);
+
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+
+            osc.start(time);
+            osc.stop(time + 0.16);
+        }
+    }
+
     // Cyber Voice Announcer System
     announce(text, priority = false) {
         if (this.isMuted) return;

@@ -286,6 +286,11 @@ class NeonSnakeGame {
                     this.firePlayerPhotonBarrage(this.player1);
                 }
 
+                // Plasma Orbital Defense Satellites & Micro-Laser Grid (M)
+                if (e.code === 'KeyM') {
+                    this.triggerPlayerOrbitalSatellites(this.player1);
+                }
+
                 // Send P2P input if in online mode
                 if (this.mode === 'online' && !window.cyberP2P.isHost) {
                     window.cyberP2P.send({
@@ -399,6 +404,15 @@ class NeonSnakeGame {
             if (window.particleEngine) {
                 window.particleEngine.addText('NEED 3 AMMO', snake.body[0].pixelX, snake.body[0].pixelY - 18, '#f43f5e', 13);
             }
+        }
+    }
+
+    triggerPlayerOrbitalSatellites(snake) {
+        if (!snake || !snake.isAlive || snake.body.length === 0) return;
+        const triggered = snake.triggerOrbitalSatellites();
+        if (triggered) {
+            this.cameraShake = Math.max(this.cameraShake, 0.35);
+            this.updateHUD();
         }
     }
 
@@ -1052,6 +1066,14 @@ class NeonSnakeGame {
         if (photonTouchBtn) {
             bindTouch('touchPhoton', () => {
                 this.firePlayerPhotonBarrage(this.player1);
+            });
+        }
+
+        // Virtual Plasma Orbital Satellites button
+        const satelliteTouchBtn = document.getElementById('touchSatellite');
+        if (satelliteTouchBtn) {
+            bindTouch('touchSatellite', () => {
+                this.triggerPlayerOrbitalSatellites(this.player1);
             });
         }
     }
@@ -1797,6 +1819,27 @@ class NeonSnakeGame {
                 this.projectiles.splice(i, 1);
                 continue;
             }
+
+            // Plasma Orbital Satellite Interceptor Check
+            let interceptedBySatellite = false;
+            for (const s of this.snakes) {
+                if (!s.isAlive || !s.orbitalSatellitesActive || s.body.length === 0 || p.owner === s) continue;
+                const head = s.body[0];
+                const distToHead = Math.hypot(p.x - head.pixelX, p.y - head.pixelY);
+                const satRadius = this.cellSize * 2.3;
+                if (distToHead <= satRadius) {
+                    interceptedBySatellite = true;
+                    if (window.particleEngine) {
+                        window.particleEngine.spawnSatelliteLaserArc(head.pixelX, head.pixelY, p.x, p.y);
+                        window.particleEngine.addText('⚡ INTERCEPTED! +75', p.x, p.y - 18, '#38bdf8', 15);
+                    }
+                    if (window.cyberAudio) window.cyberAudio.playParry();
+                    s.score += 75;
+                    this.projectiles.splice(i, 1);
+                    break;
+                }
+            }
+            if (interceptedBySatellite) continue;
 
             const gridX = Math.floor(p.x / this.cellSize);
             const gridY = Math.floor(p.y / this.cellSize);
@@ -3009,6 +3052,9 @@ class NeonSnakeGame {
                 if (this.player1.cryoFieldTimer > 0) {
                     badges += `<span class="badge cryo" style="border-color:#7dd3fc; color:#7dd3fc; box-shadow:0 0 10px #7dd3fc;">CRYO FREEZE (${Math.ceil(this.player1.cryoFieldTimer)}s)</span>`;
                 }
+                if (this.player1.orbitalSatellitesActive) {
+                    badges += `<span class="badge satellite" style="border-color:#38bdf8; color:#38bdf8; box-shadow:0 0 10px #38bdf8;">ORBITAL SATELLITES (${Math.ceil(this.player1.orbitalSatellitesTimer)}s)</span>`;
+                }
                 if (this.player1.warpOverdriveTimer > 0) {
                     badges += `<span class="badge warp" style="border-color:#00f0ff; color:#00f0ff; box-shadow:0 0 10px #00f0ff;">WARP OVERDRIVE (${Math.ceil(this.player1.warpOverdriveTimer)}s)</span>`;
                 }
@@ -3058,6 +3104,7 @@ class NeonSnakeGame {
             `TESLA CHAINS   : ${p?.teslaChainCount || 0} ARC DISCHARGES`,
             `CRYO FREEZES   : ${p?.cryoFieldCount || 0} SUB-ZERO BURSTS`,
             `PHOTON BARRAGES: ${p?.photonBarrageCount || 0} TRIPLE SALVOS`,
+            `ORBITAL SATS   : ${p?.orbitalSatellitesCount || 0} DEPLOYMENTS`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,

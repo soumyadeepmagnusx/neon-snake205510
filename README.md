@@ -32,6 +32,7 @@ A high-octane synthwave & cyberpunk canvas arcade game built with vanilla JavaSc
   - **⚡ Tesla Arc Lightning Chain**: Press `I` (or touch `TESLA`) to discharge high-voltage chained electricity arcs jumping across 6.5 grid cells. Stuns and inflicts 40 damage on enemy snakes, instantly arcs through obstacles, and produces buzzing dual-oscillator acoustic sweeps!
   - **❄️ Cryogenic Sub-Zero Freeze Field**: Press `O` (or touch `FREEZE`) to deploy a deep-freeze cryogenic stasis field for 4.0s across a 6.0-cell perimeter. Traps rival cyber snakes in complete 1.2s cryogenic lock, inflicts 25 frost damage, generates hexagonal crystalline snowflake nodes, and triggers crystalline glass acoustic resonance!
   - **💥 Tri-Directional Photon Barrage**: Press `L` (or touch `PHOTON`) to consume 3 ammo cores and discharge a high-velocity 3-way fan spread of searing crimson photon bolts. Blankets the corridor ahead, deals +35 damage per bolt (+100 score per strike), and triggers rapid triple-pulse synthesizer acoustics!
+  - **🛰️ Plasma Orbital Defense Satellites**: Press `M` (or touch `ORBIT`) to deploy 2 counter-orbiting micro-laser defense satellites around your chassis for 5.0s. Satellites actively intercept and neutralize incoming hostile enemy projectiles, grant +75 interception defense score, and beam protective laser tether conduits with dual-frequency synthesis!
   - **🛰️ Nanite Repair Drones & Hull Overshield**: Press `H` or `N` (or touch `REPAIR`) to launch 3 autonomous orbiting nanite repair micro-drones. Nanites actively reconstruct sheared tail nodes (+1 segment every 1.6s) and generate an ablative **Hull Overshield Barrier** that absorbs a fatal boundary or body impact to keep your run alive!
   - **🛡️ Kinetic Deflector Parry**: Press `V` (or touch `PARRY`) to deploy a rotating hexagonal barrier. Deflects incoming enemy plasma bolts back at the attacker at 1.5x velocity with electric matrix green sparks, awards +200 deflection points, and cuts through sweeping laser death beams!
   - **⚡ Temporal Matrix Overclock**: Hold `Z` or `X` (or touch `SLOW-MO`) to enter temporal bullet-time, slowing arena physics, hostile AI, and hazards down to 38% speed while you execute pinpoint evasive maneuvers!
@@ -104,6 +105,7 @@ A high-octane synthwave & cyberpunk canvas arcade game built with vanilla JavaSc
 | **Tesla Arc Chain** | `I` | N/A | `Y` Button / `RB` | `TESLA` Button |
 | **Cryo Freeze Field** | `O` | N/A | Left Trigger / `LT` | `FREEZE` Button |
 | **Photon Barrage** | `L` | N/A | Right Bumper / `RB` | `PHOTON` Button |
+| **Orbital Defense Satellites** | `M` | N/A | `X` Button / `LB` | `ORBIT` Button |
 | **Nanite Repair Swarm** | `H` or `N` | N/A | Right Stick / `R3` | `REPAIR` Button |
 | **Instant VCR Replay** | `R` (on Game Over) | N/A | N/A | `VCR REPLAY` Button |
 | **Pause / Resume** | `P` or `Escape` | `P` or `Escape` | `Start` Button | Tap anywhere |

@@ -85,6 +85,10 @@ class CyberSnake {
         this.cryoFieldCount = 0;
         this.photonBarrageCooldown = 0;
         this.photonBarrageCount = 0;
+        this.orbitalSatellitesActive = false;
+        this.orbitalSatellitesTimer = 0;
+        this.orbitalSatellitesCooldown = 0;
+        this.orbitalSatellitesCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -261,6 +265,25 @@ class CyberSnake {
         });
     }
 
+    triggerOrbitalSatellites() {
+        if (this.orbitalSatellitesCooldown > 0 || !this.isAlive || this.body.length === 0) return false;
+        this.orbitalSatellitesTimer = 5.0;
+        this.orbitalSatellitesCooldown = 10.0;
+        this.orbitalSatellitesActive = true;
+        this.orbitalSatellitesCount = (this.orbitalSatellitesCount || 0) + 1;
+        this.score += 175;
+
+        if (window.cyberAudio) {
+            window.cyberAudio.playOrbitalSatellites();
+            if (this.id === 'player1') window.cyberAudio.announce('Plasma orbital defense satellites deployed', true);
+        }
+        if (window.particleEngine) {
+            window.particleEngine.spawnOrbitalSatellitesActivation(this.body[0].pixelX, this.body[0].pixelY);
+            window.particleEngine.addText('🛰️ SATELLITE INTERCEPT GRID! +175', this.body[0].pixelX, this.body[0].pixelY - 24, '#38bdf8', 18);
+        }
+        return true;
+    }
+
     setOverclock(active) {
         if (active && this.overclockEnergy > 10 && this.isAlive) {
             if (!this.isOverclocked && window.cyberAudio) {
@@ -424,6 +447,13 @@ class CyberSnake {
         if (this.cryoFieldTimer > 0) this.cryoFieldTimer -= dt;
         if (this.cryoFieldCooldown > 0) this.cryoFieldCooldown -= dt;
         if (this.photonBarrageCooldown > 0) this.photonBarrageCooldown -= dt;
+        if (this.orbitalSatellitesTimer > 0) {
+            this.orbitalSatellitesTimer -= dt;
+            if (this.orbitalSatellitesTimer <= 0) {
+                this.orbitalSatellitesActive = false;
+            }
+        }
+        if (this.orbitalSatellitesCooldown > 0) this.orbitalSatellitesCooldown -= dt;
 
         // Weapon & Ammo Cooldown
         if (this.ammoCooldown > 0) this.ammoCooldown -= dt;
@@ -994,6 +1024,53 @@ class CyberSnake {
             ctx.shadowColor = '#39ff14';
             ctx.setLineDash([5, 5]);
             ctx.stroke();
+            ctx.restore();
+        }
+
+        // Plasma Orbital Defense Satellites & Micro-Laser Grid
+        if (this.orbitalSatellitesActive && this.body.length > 0) {
+            const head = this.body[0];
+            ctx.save();
+            ctx.translate(head.pixelX, head.pixelY);
+            const orbitRadius = cellSize * 2.2;
+            const orbitTime = -Date.now() * 0.006; // Counter-clockwise rapid orbit
+
+            // Orbital boundary ring
+            ctx.beginPath();
+            ctx.arc(0, 0, orbitRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([4, 4]);
+            ctx.stroke();
+
+            // 2 Counter-orbiting plasma satellites
+            for (let s = 0; s < 2; s++) {
+                const angle = orbitTime + (s * Math.PI);
+                const sx = Math.cos(angle) * orbitRadius;
+                const sy = Math.sin(angle) * orbitRadius;
+
+                // Laser connection arc to snake head
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(sx, sy);
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+
+                // Satellite body & core
+                ctx.beginPath();
+                ctx.arc(sx, sy, 4.5, 0, Math.PI * 2);
+                ctx.fillStyle = '#38bdf8';
+                ctx.shadowBlur = 14;
+                ctx.shadowColor = '#38bdf8';
+                ctx.fill();
+
+                // Inner white plasma spark
+                ctx.beginPath();
+                ctx.arc(sx, sy, 2, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+            }
             ctx.restore();
         }
 
