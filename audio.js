@@ -1014,6 +1014,32 @@ class CyberAudioEngine {
         osc.stop(now + 0.35);
     }
 
+    playPhotonBarrage() {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+
+        // Rapid triple laser pulse sound
+        for (let i = 0; i < 3; i++) {
+            const time = now + i * 0.06;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(850, time);
+            osc.frequency.exponentialRampToValueAtTime(200, time + 0.08);
+
+            gain.gain.setValueAtTime(0.35, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+
+            osc.start(time);
+            osc.stop(time + 0.08);
+        }
+    }
+
     // Cyber Voice Announcer System
     announce(text, priority = false) {
         if (this.isMuted) return;

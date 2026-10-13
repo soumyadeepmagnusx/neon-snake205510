@@ -281,6 +281,11 @@ class NeonSnakeGame {
                     this.triggerPlayerCryoField(this.player1);
                 }
 
+                // Photon Barrage 3-Way Laser Fan (L)
+                if (e.code === 'KeyL' && this.mode !== 'local2p') {
+                    this.firePlayerPhotonBarrage(this.player1);
+                }
+
                 // Send P2P input if in online mode
                 if (this.mode === 'online' && !window.cyberP2P.isHost) {
                     window.cyberP2P.send({
@@ -377,6 +382,22 @@ class NeonSnakeGame {
         } else if (snake.ammo < 2 && snake === this.player1 && snake.body.length > 0) {
             if (window.particleEngine) {
                 window.particleEngine.addText('NEED 2 AMMO', snake.body[0].pixelX, snake.body[0].pixelY - 18, '#ff0055', 13);
+            }
+        }
+    }
+
+    firePlayerPhotonBarrage(snake) {
+        if (!snake || !snake.isAlive) return;
+        const projs = snake.shootPhotonBarrage();
+        if (projs && Array.isArray(projs)) {
+            for (const p of projs) {
+                this.projectiles.push(p);
+            }
+            this.cameraShake = Math.max(this.cameraShake, 0.4);
+            this.updateHUD();
+        } else if (snake.ammo < 3 && snake === this.player1 && snake.body.length > 0) {
+            if (window.particleEngine) {
+                window.particleEngine.addText('NEED 3 AMMO', snake.body[0].pixelX, snake.body[0].pixelY - 18, '#f43f5e', 13);
             }
         }
     }
@@ -1023,6 +1044,14 @@ class NeonSnakeGame {
         if (cryoTouchBtn) {
             bindTouch('touchCryo', () => {
                 this.triggerPlayerCryoField(this.player1);
+            });
+        }
+
+        // Virtual Photon Barrage button
+        const photonTouchBtn = document.getElementById('touchPhoton');
+        if (photonTouchBtn) {
+            bindTouch('touchPhoton', () => {
+                this.firePlayerPhotonBarrage(this.player1);
             });
         }
     }
@@ -1833,13 +1862,18 @@ class NeonSnakeGame {
                             break;
                         }
 
-                        const dmg = p.isRailgun ? 55 : 25;
+                        const dmg = p.isRailgun ? 55 : (p.isPhoton ? 35 : 25);
                         const outcome = target.takeDamage(dmg);
                         if (p.isRailgun) {
                             window.particleEngine.spawnRailgunImpact(p.x, p.y);
                             window.particleEngine.addText('⚡ PIERCED! +300', p.x, p.y - 18, '#ffe600', 18);
                             if (p.owner === this.player1) this.score += 300;
                             this.cameraShake = Math.max(this.cameraShake, 0.45);
+                        } else if (p.isPhoton) {
+                            window.particleEngine.spawnBurst(p.x, p.y, '#f43f5e', 24, 6);
+                            window.particleEngine.addText('💥 PHOTON HIT! +100', p.x, p.y - 18, '#f43f5e', 18);
+                            if (p.owner === this.player1) this.score += 100;
+                            this.cameraShake = Math.max(this.cameraShake, 0.35);
                         } else {
                             window.particleEngine.spawnBurst(p.x, p.y, p.color, 20, 5);
                             this.cameraShake = Math.max(this.cameraShake, 0.3);
@@ -2337,6 +2371,17 @@ class NeonSnakeGame {
                 ctx.arc(-8, 0, 8, 0, Math.PI * 2);
                 ctx.arc(8, 0, 8, 0, Math.PI * 2);
                 ctx.stroke();
+            } else if (p.isPhoton) {
+                // High-velocity Photon Barrage bolt
+                const angle = Math.atan2(p.vy, p.vx);
+                ctx.rotate(angle);
+                ctx.shadowColor = '#f43f5e';
+                ctx.shadowBlur = 18;
+                ctx.fillStyle = '#f43f5e';
+                ctx.fillRect(-12, -4, 24, 8);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(-10, -1.5, 20, 3);
             } else {
                 // Standard Plasma bolt capsule
                 const angle = Math.atan2(p.vy, p.vx);
@@ -3012,6 +3057,7 @@ class NeonSnakeGame {
             `CHRONO DASHES  : ${p?.chronoDashCount || 0} PHASE LEAPS`,
             `TESLA CHAINS   : ${p?.teslaChainCount || 0} ARC DISCHARGES`,
             `CRYO FREEZES   : ${p?.cryoFieldCount || 0} SUB-ZERO BURSTS`,
+            `PHOTON BARRAGES: ${p?.photonBarrageCount || 0} TRIPLE SALVOS`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,

@@ -831,6 +831,18 @@ canvas {
     color: #000;
 }
 
+.touch-btn.photon-btn {
+    border: 2px solid #fff;
+    background: #be123c;
+    box-shadow: 4px 4px 0px #f43f5e, 0 0 14px #f43f5e;
+    color: #fff;
+}
+
+.touch-btn.photon-btn:active {
+    background: #f43f5e;
+    color: #000;
+}
+
 .touch-btn.drift-btn {
     border: 2px solid #fff;
     background: #0077ff;

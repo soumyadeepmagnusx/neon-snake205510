@@ -433,6 +433,24 @@ class ParticleEngine {
         }
     }
 
+    spawnPhotonBarrageMuzzle(x, y) {
+        this.shockwaves.push(new Shockwave(x, y, '#f43f5e', 75, 0.35));
+        for (let i = 0; i < 20; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 6 + 2;
+            this.particles.push(new Particle(
+                x, y,
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed,
+                '#f43f5e',
+                Math.random() * 3 + 2,
+                0.35,
+                'spark'
+            ));
+        }
+    }
+
     spawnTeslaNova(x, y) {
         this.shockwaves.push(new Shockwave(x, y, '#00f0ff', 120, 0.45));
         this.shockwaves.push(new Shockwave(x, y, '#ffffff', 80, 0.3));

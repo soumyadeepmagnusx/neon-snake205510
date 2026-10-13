@@ -83,6 +83,8 @@ class CyberSnake {
         this.cryoFieldTimer = 0;
         this.cryoFieldCooldown = 0;
         this.cryoFieldCount = 0;
+        this.photonBarrageCooldown = 0;
+        this.photonBarrageCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -220,6 +222,43 @@ class CyberSnake {
             window.particleEngine.addText('❄️ CRYO FREEZE! +160', this.body[0].pixelX, this.body[0].pixelY - 24, '#7dd3fc', 18);
         }
         return true;
+    }
+
+    shootPhotonBarrage() {
+        if (this.ammo < 3 || this.photonBarrageCooldown > 0 || !this.isAlive || this.body.length === 0) return null;
+        this.ammo -= 3;
+        this.photonBarrageCooldown = 4.5;
+        this.photonBarrageCount = (this.photonBarrageCount || 0) + 1;
+        this.score += 150;
+
+        if (window.cyberAudio) {
+            window.cyberAudio.playPhotonBarrage();
+            if (this.id === 'player1') window.cyberAudio.announce('Tri-directional photon barrage discharged', true);
+        }
+        if (window.particleEngine) {
+            window.particleEngine.spawnPhotonBarrageMuzzle(this.body[0].pixelX, this.body[0].pixelY);
+            window.particleEngine.addText('💥 PHOTON BARRAGE!', this.body[0].pixelX, this.body[0].pixelY - 24, '#f43f5e', 18);
+        }
+
+        const hx = this.body[0].pixelX;
+        const hy = this.body[0].pixelY;
+        const baseAngle = Math.atan2(this.dir.y, this.dir.x);
+        const spreadAngles = [-0.32, 0, 0.32]; // 3-way fan spread
+        const speed = 16;
+
+        return spreadAngles.map(offset => {
+            const angle = baseAngle + offset;
+            return {
+                x: hx,
+                y: hy,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                color: '#f43f5e',
+                owner: this,
+                isPhoton: true,
+                life: 1.3
+            };
+        });
     }
 
     setOverclock(active) {
@@ -384,6 +423,7 @@ class CyberSnake {
         if (this.teslaChainCooldown > 0) this.teslaChainCooldown -= dt;
         if (this.cryoFieldTimer > 0) this.cryoFieldTimer -= dt;
         if (this.cryoFieldCooldown > 0) this.cryoFieldCooldown -= dt;
+        if (this.photonBarrageCooldown > 0) this.photonBarrageCooldown -= dt;
 
         // Weapon & Ammo Cooldown
         if (this.ammoCooldown > 0) this.ammoCooldown -= dt;
