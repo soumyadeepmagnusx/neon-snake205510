@@ -471,6 +471,23 @@ class ParticleEngine {
         }
     }
 
+    spawnHoloGlitch(x, y) {
+        this.shockwaves.push(new Shockwave(x, y, '#00f0ff', 85, 0.4));
+        for (let i = 0; i < 24; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            this.particles.push(new Particle(
+                x + (Math.random() - 0.5) * 24,
+                y + (Math.random() - 0.5) * 24,
+                (Math.random() - 0.5) * 3,
+                (Math.random() - 0.5) * 3,
+                Math.random() > 0.5 ? '#00f0ff' : '#ffffff',
+                Math.random() * 3 + 1.5,
+                0.4,
+                'binary'
+            ));
+        }
+    }
+
     spawnSatelliteLaserArc(x1, y1, x2, y2) {
         this.spawnElectricArc(x1, y1, x2, y2, '#38bdf8');
         this.spawnBurst(x2, y2, '#38bdf8', 8, 2.5);

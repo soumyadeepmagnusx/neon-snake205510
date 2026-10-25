@@ -35,6 +35,7 @@ class NeonSnakeGame {
         this.foods = [];
         this.obstacles = [];
         this.projectiles = [];
+        this.decoys = [];
 
         // Laser Sweep Arena Hazard
         this.laserSweepTimer = 0;
@@ -291,6 +292,11 @@ class NeonSnakeGame {
                     this.triggerPlayerOrbitalSatellites(this.player1);
                 }
 
+                // Holographic Mirage Decoy (1)
+                if (e.code === 'Digit1' || e.code === 'Numpad1') {
+                    this.deployPlayerHoloDecoy(this.player1);
+                }
+
                 // Send P2P input if in online mode
                 if (this.mode === 'online' && !window.cyberP2P.isHost) {
                     window.cyberP2P.send({
@@ -412,6 +418,16 @@ class NeonSnakeGame {
         const triggered = snake.triggerOrbitalSatellites();
         if (triggered) {
             this.cameraShake = Math.max(this.cameraShake, 0.35);
+            this.updateHUD();
+        }
+    }
+
+    deployPlayerHoloDecoy(snake) {
+        if (!snake || !snake.isAlive) return;
+        const decoy = snake.deployHoloDecoy();
+        if (decoy) {
+            this.decoys.push(decoy);
+            this.cameraShake = Math.max(this.cameraShake, 0.3);
             this.updateHUD();
         }
     }
@@ -1070,6 +1086,14 @@ class NeonSnakeGame {
         }
 
         // Virtual Plasma Orbital Satellites button
+        // Virtual Holographic Decoy button
+        const decoyTouchBtn = document.getElementById('touchDecoy');
+        if (decoyTouchBtn) {
+            bindTouch('touchDecoy', () => {
+                this.deployPlayerHoloDecoy(this.player1);
+            });
+        }
+
         const satelliteTouchBtn = document.getElementById('touchSatellite');
         if (satelliteTouchBtn) {
             bindTouch('touchSatellite', () => {
@@ -1118,6 +1142,7 @@ class NeonSnakeGame {
         this.foods = [];
         this.obstacles = [];
         this.projectiles = [];
+        this.decoys = [];
         this.mines = [];
         this.portals = [];
         this.replayBuffer = [];
@@ -1450,6 +1475,76 @@ class NeonSnakeGame {
                 window.particleEngine.spawnElectricArc(mine.pixelX, mine.pixelY, adj.pixelX, adj.pixelY, '#00f0ff');
             }
             this.detonateMine(adj, chainIndex + 1);
+        }
+    }
+
+    updateDecoys(dt) {
+        for (let d = this.decoys.length - 1; d >= 0; d--) {
+            const decoy = this.decoys[d];
+            decoy.life -= dt;
+            if (decoy.life <= 0) {
+                if (window.particleEngine) {
+                    window.particleEngine.spawnHoloGlitch(decoy.pixelX, decoy.pixelY);
+                }
+                this.decoys.splice(d, 1);
+                continue;
+            }
+
+            // Move decoy in its forward direction
+            decoy.moveTimer += dt;
+            if (decoy.moveTimer >= 0.14) {
+                decoy.moveTimer = 0;
+                const nx = (decoy.x + decoy.dir.x + this.gridWidth) % this.gridWidth;
+                const ny = (decoy.y + decoy.dir.y + this.gridHeight) % this.gridHeight;
+                decoy.x = nx;
+                decoy.y = ny;
+                decoy.pixelX = nx * this.cellSize + this.cellSize / 2;
+                decoy.pixelY = ny * this.cellSize + this.cellSize / 2;
+
+                decoy.body.unshift({
+                    x: nx,
+                    y: ny,
+                    pixelX: decoy.pixelX,
+                    pixelY: decoy.pixelY
+                });
+                if (decoy.body.length > 5) decoy.body.pop();
+            }
+
+            // 1. Hostile projectile collision check
+            for (let pIdx = this.projectiles.length - 1; pIdx >= 0; pIdx--) {
+                const proj = this.projectiles[pIdx];
+                if (proj.owner === decoy.owner) continue;
+                const dist = Math.hypot(proj.x - decoy.pixelX, proj.y - decoy.pixelY);
+                if (dist < this.cellSize * 1.2) {
+                    this.projectiles.splice(pIdx, 1);
+                    if (window.particleEngine) {
+                        window.particleEngine.spawnHoloGlitch(decoy.pixelX, decoy.pixelY);
+                        window.particleEngine.addText('HOLO DEFLECT! +150', decoy.pixelX, decoy.pixelY - 18, '#00f0ff', 16);
+                    }
+                    if (window.cyberAudio) window.cyberAudio.playParry();
+                    if (decoy.owner) decoy.owner.score += 150;
+                    decoy.life -= 1.8;
+                    break;
+                }
+            }
+
+            // 2. Hostile snake head collision diverted to decoy
+            for (const snake of this.snakes) {
+                if (!snake.isAlive || snake === decoy.owner || snake.body.length === 0) continue;
+                const headDist = Math.hypot(snake.body[0].pixelX - decoy.pixelX, snake.body[0].pixelY - decoy.pixelY);
+                if (headDist < this.cellSize * 1.3) {
+                    snake.moveTimer = -0.6; // Stun hostile for 0.6s
+                    snake.takeDamage(30);
+                    if (window.particleEngine) {
+                        window.particleEngine.spawnHoloGlitch(decoy.pixelX, decoy.pixelY);
+                        window.particleEngine.addText('DECOY AMBUSH! -30HP', decoy.pixelX, decoy.pixelY - 20, '#00f0ff', 18);
+                    }
+                    if (window.cyberAudio) window.cyberAudio.playParry();
+                    if (decoy.owner) decoy.owner.score += 200;
+                    decoy.life = 0; // consumed
+                    break;
+                }
+            }
         }
     }
 
@@ -2240,6 +2335,7 @@ class NeonSnakeGame {
         // Update Quantum Portals & Proximity Mines
         this.updatePortals(dt);
         this.updateMines(dt);
+        this.updateDecoys(dt);
 
         // Record Replay Frame for VCR Fatal Replay
         if (this.isRunning && !this.gameOver && this.player1 && this.player1.isAlive) {
@@ -2356,6 +2452,7 @@ class NeonSnakeGame {
 
         // 8. Draw Proximity Cyber Mines
         this.drawMines(ctx);
+        this.drawDecoys(ctx);
 
         // 9. Draw Foods & Powerups
         this.drawFoods(ctx);
@@ -2580,6 +2677,44 @@ class NeonSnakeGame {
             ctx.beginPath();
             ctx.arc(0, 0, 3, 0, Math.PI * 2);
             ctx.fill();
+
+            ctx.restore();
+        }
+    }
+
+    drawDecoys(ctx) {
+        for (const decoy of this.decoys) {
+            ctx.save();
+            const alphaRatio = Math.max(0.1, decoy.life / decoy.maxLife);
+            const flicker = 0.5 + Math.sin(Date.now() * 0.03) * 0.3;
+            ctx.globalAlpha = alphaRatio * flicker;
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = '#00f0ff';
+            ctx.fillStyle = '#00f0ff';
+            ctx.strokeStyle = '#ffffff';
+
+            for (let i = 0; i < decoy.body.length; i++) {
+                const seg = decoy.body[i];
+                const r = (this.cellSize * 0.42) * (1 - i * 0.08);
+                ctx.beginPath();
+                ctx.arc(seg.pixelX, seg.pixelY, Math.max(3, r), 0, Math.PI * 2);
+                ctx.fillStyle = i === 0 ? '#00f0ff' : 'rgba(0, 240, 255, 0.4)';
+                ctx.fill();
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(seg.pixelX - r, seg.pixelY);
+                ctx.lineTo(seg.pixelX + r, seg.pixelY);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            ctx.font = "900 9px 'Orbitron', monospace";
+            ctx.fillStyle = '#00f0ff';
+            ctx.textAlign = 'center';
+            ctx.fillText('MIRAGE', decoy.pixelX, decoy.pixelY - this.cellSize * 0.7);
 
             ctx.restore();
         }
@@ -3052,6 +3187,11 @@ class NeonSnakeGame {
                 if (this.player1.cryoFieldTimer > 0) {
                     badges += `<span class="badge cryo" style="border-color:#7dd3fc; color:#7dd3fc; box-shadow:0 0 10px #7dd3fc;">CRYO FREEZE (${Math.ceil(this.player1.cryoFieldTimer)}s)</span>`;
                 }
+                if (this.player1.holoDecoyCooldown > 0) {
+                    badges += `<span class="badge decoy" style="border-color:#00f0ff; color:#00f0ff;">DECOY CD (${Math.ceil(this.player1.holoDecoyCooldown)}s)</span>`;
+                } else {
+                    badges += `<span class="badge decoy" style="border-color:#00f0ff; color:#00f0ff; box-shadow:0 0 10px #00f0ff;">DECOY [1] READY</span>`;
+                }
                 if (this.player1.orbitalSatellitesActive) {
                     badges += `<span class="badge satellite" style="border-color:#38bdf8; color:#38bdf8; box-shadow:0 0 10px #38bdf8;">ORBITAL SATELLITES (${Math.ceil(this.player1.orbitalSatellitesTimer)}s)</span>`;
                 }
@@ -3105,6 +3245,7 @@ class NeonSnakeGame {
             `CRYO FREEZES   : ${p?.cryoFieldCount || 0} SUB-ZERO BURSTS`,
             `PHOTON BARRAGES: ${p?.photonBarrageCount || 0} TRIPLE SALVOS`,
             `ORBITAL SATS   : ${p?.orbitalSatellitesCount || 0} DEPLOYMENTS`,
+            `HOLO DECOYS    : ${p?.holoDecoyCount || 0} CONCEALMENTS`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,

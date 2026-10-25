@@ -89,6 +89,8 @@ class CyberSnake {
         this.orbitalSatellitesTimer = 0;
         this.orbitalSatellitesCooldown = 0;
         this.orbitalSatellitesCount = 0;
+        this.holoDecoyCooldown = 0;
+        this.holoDecoyCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -284,6 +286,47 @@ class CyberSnake {
         return true;
     }
 
+    deployHoloDecoy() {
+        if (this.holoDecoyCooldown > 0 || !this.isAlive || this.body.length === 0) return null;
+        this.holoDecoyCooldown = 9.0;
+        this.holoDecoyCount = (this.holoDecoyCount || 0) + 1;
+        this.score += 120;
+
+        if (window.cyberAudio) {
+            window.cyberAudio.playHoloDecoy();
+            if (this.id === 'player1') window.cyberAudio.announce('Holographic decoy deployed', true);
+        }
+        if (window.particleEngine) {
+            window.particleEngine.spawnHoloGlitch(this.body[0].pixelX, this.body[0].pixelY);
+            window.particleEngine.addText('👥 MIRAGE DECOY! +120', this.body[0].pixelX, this.body[0].pixelY - 24, '#00f0ff', 18);
+        }
+
+        const head = this.body[0];
+        const decoySegments = [];
+        for (let i = 0; i < Math.min(this.body.length, 5); i++) {
+            decoySegments.push({
+                x: this.body[i].x,
+                y: this.body[i].y,
+                pixelX: this.body[i].pixelX,
+                pixelY: this.body[i].pixelY
+            });
+        }
+
+        return {
+            x: head.x,
+            y: head.y,
+            pixelX: head.pixelX,
+            pixelY: head.pixelY,
+            dir: { ...this.dir },
+            owner: this,
+            body: decoySegments,
+            life: 5.5,
+            maxLife: 5.5,
+            moveTimer: 0,
+            color: '#00f0ff'
+        };
+    }
+
     setOverclock(active) {
         if (active && this.overclockEnergy > 10 && this.isAlive) {
             if (!this.isOverclocked && window.cyberAudio) {
@@ -454,6 +497,7 @@ class CyberSnake {
             }
         }
         if (this.orbitalSatellitesCooldown > 0) this.orbitalSatellitesCooldown -= dt;
+        if (this.holoDecoyCooldown > 0) this.holoDecoyCooldown -= dt;
 
         // Weapon & Ammo Cooldown
         if (this.ammoCooldown > 0) this.ammoCooldown -= dt;

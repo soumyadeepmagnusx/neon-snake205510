@@ -1066,6 +1066,33 @@ class CyberAudioEngine {
         }
     }
 
+    playHoloDecoy() {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+
+        // Holographic phase-sweep arpeggiator
+        const freqs = [440, 660, 880, 1320];
+        freqs.forEach((f, idx) => {
+            const time = now + idx * 0.04;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(f, time);
+            osc.frequency.exponentialRampToValueAtTime(f * 1.5, time + 0.12);
+
+            gain.gain.setValueAtTime(0.3, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.12);
+
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+
+            osc.start(time);
+            osc.stop(time + 0.12);
+        });
+    }
+
     // Cyber Voice Announcer System
     announce(text, priority = false) {
         if (this.isMuted) return;
