@@ -523,6 +523,44 @@ class ParticleEngine {
         }
     }
 
+    spawnChronoRecallImplosion(x1, y1, x2, y2) {
+        this.shockwaves.push(new Shockwave(x1, y1, '#b026ff', 90, 0.4));
+        this.shockwaves.push(new Shockwave(x2, y2, '#00f0ff', 130, 0.5));
+        this.shockwaves.push(new Shockwave(x2, y2, '#ffffff', 80, 0.3));
+
+        const steps = 18;
+        for (let i = 0; i <= steps; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const t = i / steps;
+            const px = x1 + (x2 - x1) * t;
+            const py = y1 + (y2 - y1) * t;
+            this.particles.push(new Particle(
+                px, py,
+                (Math.random() - 0.5) * 3,
+                (Math.random() - 0.5) * 3,
+                i % 2 === 0 ? '#b026ff' : '#00f0ff',
+                Math.random() * 3 + 2,
+                0.5,
+                'spark'
+            ));
+        }
+
+        for (let j = 0; j < 24; j++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const angle = (j * Math.PI * 2) / 24;
+            const speed = Math.random() * 5 + 2.5;
+            this.particles.push(new Particle(
+                x2, y2,
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed,
+                '#b026ff',
+                Math.random() * 3 + 2,
+                0.45,
+                'binary'
+            ));
+        }
+    }
+
     spawnSatelliteLaserArc(x1, y1, x2, y2) {
         this.spawnElectricArc(x1, y1, x2, y2, '#38bdf8');
         this.spawnBurst(x2, y2, '#38bdf8', 8, 2.5);

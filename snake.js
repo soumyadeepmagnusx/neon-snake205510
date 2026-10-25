@@ -93,6 +93,9 @@ class CyberSnake {
         this.holoDecoyCount = 0;
         this.orbitalStrikeCooldown = 0;
         this.orbitalStrikeCount = 0;
+        this.chronoAnchor = null;
+        this.chronoAnchorCooldown = 0;
+        this.chronoAnchorCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -361,6 +364,79 @@ class CyberSnake {
         };
     }
 
+    triggerChronoAnchor() {
+        if (!this.isAlive || this.body.length === 0) return null;
+
+        if (this.chronoAnchor) {
+            const anchor = this.chronoAnchor;
+            const startX = this.body[0].pixelX;
+            const startY = this.body[0].pixelY;
+
+            const headX = anchor.x;
+            const headY = anchor.y;
+            this.gridX = headX;
+            this.gridY = headY;
+            this.dir = { ...anchor.dir };
+            this.dirQueue = [];
+
+            for (let i = 0; i < this.body.length; i++) {
+                const segX = (headX - this.dir.x * i + 3600) % 36;
+                const segY = (headY - this.dir.y * i + 3600) % 36;
+                this.body[i] = {
+                    x: segX,
+                    y: segY,
+                    pixelX: segX * 20 + 10,
+                    pixelY: segY * 20 + 10
+                };
+            }
+
+            this.boostEnergy = Math.min(100, this.boostEnergy + 35);
+            this.phaseShiftTimer = Math.max(this.phaseShiftTimer, 1.8);
+            this.chronoAnchor = null;
+            this.chronoAnchorCooldown = 12.0;
+            this.chronoAnchorCount = (this.chronoAnchorCount || 0) + 1;
+            this.score += 180;
+
+            if (window.cyberAudio) {
+                window.cyberAudio.playChronoAnchorRecall();
+                if (this.id === 'player1') window.cyberAudio.announce('Chrono rewind executed', true);
+            }
+
+            return {
+                action: 'recall',
+                startX: startX,
+                startY: startY,
+                endX: anchor.pixelX,
+                endY: anchor.pixelY,
+                anchor: anchor
+            };
+        }
+
+        if (this.chronoAnchorCooldown > 0) return null;
+
+        const head = this.body[0];
+        this.chronoAnchor = {
+            x: head.x,
+            y: head.y,
+            pixelX: head.pixelX,
+            pixelY: head.pixelY,
+            dir: { ...this.dir },
+            life: 8.0,
+            maxLife: 8.0,
+            pulse: 0
+        };
+
+        if (window.cyberAudio) {
+            window.cyberAudio.playChronoAnchorDrop();
+            if (this.id === 'player1') window.cyberAudio.announce('Chrono anchor planted', true);
+        }
+
+        return {
+            action: 'drop',
+            anchor: this.chronoAnchor
+        };
+    }
+
     setOverclock(active) {
         if (active && this.overclockEnergy > 10 && this.isAlive) {
             if (!this.isOverclocked && window.cyberAudio) {
@@ -533,6 +609,15 @@ class CyberSnake {
         if (this.orbitalSatellitesCooldown > 0) this.orbitalSatellitesCooldown -= dt;
         if (this.holoDecoyCooldown > 0) this.holoDecoyCooldown -= dt;
         if (this.orbitalStrikeCooldown > 0) this.orbitalStrikeCooldown -= dt;
+        if (this.chronoAnchorCooldown > 0) this.chronoAnchorCooldown -= dt;
+        if (this.chronoAnchor) {
+            this.chronoAnchor.life -= dt;
+            this.chronoAnchor.pulse = (this.chronoAnchor.pulse + dt * 5) % (Math.PI * 2);
+            if (this.chronoAnchor.life <= 0) {
+                this.chronoAnchor = null;
+                this.chronoAnchorCooldown = 8.0;
+            }
+        }
 
         // Weapon & Ammo Cooldown
         if (this.ammoCooldown > 0) this.ammoCooldown -= dt;

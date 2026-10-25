@@ -294,6 +294,11 @@ class NeonSnakeGame {
                 }
 
                 // Holographic Mirage Decoy (1)
+                // Chrono Anchor Recall (3)
+                if (e.code === 'Digit3' || e.code === 'Numpad3') {
+                    this.triggerPlayerChronoAnchor(this.player1);
+                }
+
                 // Ionized Orbital Laser Strike (2)
                 if (e.code === 'Digit2' || e.code === 'Numpad2') {
                     this.triggerPlayerOrbitalStrike(this.player1);
@@ -424,6 +429,26 @@ class NeonSnakeGame {
         const triggered = snake.triggerOrbitalSatellites();
         if (triggered) {
             this.cameraShake = Math.max(this.cameraShake, 0.35);
+            this.updateHUD();
+        }
+    }
+
+    triggerPlayerChronoAnchor(snake) {
+        if (!snake || !snake.isAlive) return;
+        const res = snake.triggerChronoAnchor();
+        if (res) {
+            this.cameraShake = Math.max(this.cameraShake, 0.45);
+            if (res.action === 'drop') {
+                if (window.particleEngine) {
+                    window.particleEngine.addText('⚓ CHRONO ANCHOR SET', res.anchor.pixelX, res.anchor.pixelY - 20, '#b026ff', 16);
+                    window.particleEngine.spawnBurst(res.anchor.pixelX, res.anchor.pixelY, '#b026ff', 16, 4);
+                }
+            } else if (res.action === 'recall') {
+                if (window.particleEngine) {
+                    window.particleEngine.spawnChronoRecallImplosion(res.startX, res.startY, res.endX, res.endY);
+                    window.particleEngine.addText('⏳ QUANTUM REWIND! +180', res.endX, res.endY - 24, '#b026ff', 20);
+                }
+            }
             this.updateHUD();
         }
     }
@@ -1107,6 +1132,14 @@ class NeonSnakeGame {
         // Virtual Plasma Orbital Satellites button
         // Virtual Holographic Decoy button
         // Virtual Ionized Orbital Strike button
+        // Virtual Chrono Recall button
+        const recallTouchBtn = document.getElementById('touchRecall');
+        if (recallTouchBtn) {
+            bindTouch('touchRecall', () => {
+                this.triggerPlayerChronoAnchor(this.player1);
+            });
+        }
+
         const strikeTouchBtn = document.getElementById('touchStrike');
         if (strikeTouchBtn) {
             bindTouch('touchStrike', () => {
@@ -2554,6 +2587,7 @@ class NeonSnakeGame {
         this.drawMines(ctx);
         this.drawDecoys(ctx);
         this.drawOrbitalStrikes(ctx);
+        this.drawChronoAnchor(ctx);
 
         // 9. Draw Foods & Powerups
         this.drawFoods(ctx);
@@ -2880,6 +2914,55 @@ class NeonSnakeGame {
                 ctx.lineWidth = 3;
                 ctx.stroke();
             }
+            ctx.restore();
+        }
+    }
+
+    drawChronoAnchor(ctx) {
+        for (const s of this.snakes) {
+            if (!s.isAlive || !s.chronoAnchor || s.body.length === 0) continue;
+            const anchor = s.chronoAnchor;
+            const head = s.body[0];
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(head.pixelX, head.pixelY);
+            ctx.lineTo(anchor.pixelX, anchor.pixelY);
+            ctx.strokeStyle = 'rgba(176, 38, 255, 0.55)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 6]);
+            ctx.lineDashOffset = -Date.now() * 0.03;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#b026ff';
+            ctx.stroke();
+
+            ctx.translate(anchor.pixelX, anchor.pixelY);
+            const pulse = anchor.pulse || 0;
+
+            ctx.beginPath();
+            ctx.arc(0, 0, this.cellSize * 0.85, 0, Math.PI * 2);
+            ctx.strokeStyle = '#b026ff';
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 16;
+            ctx.shadowColor = '#b026ff';
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(0, 0, this.cellSize * 0.55 + Math.sin(pulse) * 3, 0, Math.PI * 2);
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(0, 0, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.font = "900 9px 'Orbitron', monospace";
+            ctx.fillStyle = '#b026ff';
+            ctx.textAlign = 'center';
+            ctx.fillText(`ANCHOR [${Math.ceil(anchor.life)}s]`, 0, -this.cellSize * 0.95);
+
             ctx.restore();
         }
     }
@@ -3361,6 +3444,13 @@ class NeonSnakeGame {
                 } else {
                     badges += `<span class="badge strike" style="border-color:#ffe600; color:#ffe600; box-shadow:0 0 10px #ffe600;">STRIKE [2] READY</span>`;
                 }
+                if (this.player1.chronoAnchor) {
+                    badges += `<span class="badge recall" style="border-color:#b026ff; color:#b026ff; box-shadow:0 0 10px #b026ff;">RECALL [3] (${Math.ceil(this.player1.chronoAnchor.life)}s)</span>`;
+                } else if (this.player1.chronoAnchorCooldown > 0) {
+                    badges += `<span class="badge recall" style="border-color:#b026ff; color:#b026ff;">ANCHOR CD (${Math.ceil(this.player1.chronoAnchorCooldown)}s)</span>`;
+                } else {
+                    badges += `<span class="badge recall" style="border-color:#b026ff; color:#b026ff; box-shadow:0 0 10px #b026ff;">ANCHOR [3] READY</span>`;
+                }
                 if (this.player1.orbitalSatellitesActive) {
                     badges += `<span class="badge satellite" style="border-color:#38bdf8; color:#38bdf8; box-shadow:0 0 10px #38bdf8;">ORBITAL SATELLITES (${Math.ceil(this.player1.orbitalSatellitesTimer)}s)</span>`;
                 }
@@ -3416,6 +3506,7 @@ class NeonSnakeGame {
             `ORBITAL SATS   : ${p?.orbitalSatellitesCount || 0} DEPLOYMENTS`,
             `HOLO DECOYS    : ${p?.holoDecoyCount || 0} CONCEALMENTS`,
             `ORBITAL STRIKES: ${p?.orbitalStrikeCount || 0} BOMBARDMENTS`,
+            `CHRONO RECALLS : ${p?.chronoAnchorCount || 0} QUANTUM REWINDS`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,

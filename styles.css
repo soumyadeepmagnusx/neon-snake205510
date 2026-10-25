@@ -492,6 +492,13 @@ canvas {
     box-shadow: 0 0 10px rgba(255, 230, 0, 0.5);
 }
 
+.badge.recall {
+    background: rgba(176, 38, 255, 0.25);
+    border: 1px solid var(--neon-purple);
+    color: var(--neon-purple);
+    box-shadow: 0 0 10px rgba(176, 38, 255, 0.5);
+}
+
 @keyframes badgePulse {
     from { opacity: 0.7; }
     to { opacity: 1; }
@@ -890,6 +897,18 @@ canvas {
 
 .touch-btn.strike-btn:active {
     background: #ffe600;
+    color: #000;
+}
+
+.touch-btn.recall-btn {
+    border: 2px solid #fff;
+    background: #7e22ce;
+    box-shadow: 4px 4px 0px #b026ff, 0 0 14px #b026ff;
+    color: #fff;
+}
+
+.touch-btn.recall-btn:active {
+    background: #b026ff;
     color: #000;
 }
 
