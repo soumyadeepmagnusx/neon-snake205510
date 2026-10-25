@@ -36,6 +36,7 @@ class NeonSnakeGame {
         this.obstacles = [];
         this.projectiles = [];
         this.decoys = [];
+        this.orbitalStrikes = [];
 
         // Laser Sweep Arena Hazard
         this.laserSweepTimer = 0;
@@ -293,6 +294,11 @@ class NeonSnakeGame {
                 }
 
                 // Holographic Mirage Decoy (1)
+                // Ionized Orbital Laser Strike (2)
+                if (e.code === 'Digit2' || e.code === 'Numpad2') {
+                    this.triggerPlayerOrbitalStrike(this.player1);
+                }
+
                 if (e.code === 'Digit1' || e.code === 'Numpad1') {
                     this.deployPlayerHoloDecoy(this.player1);
                 }
@@ -418,6 +424,19 @@ class NeonSnakeGame {
         const triggered = snake.triggerOrbitalSatellites();
         if (triggered) {
             this.cameraShake = Math.max(this.cameraShake, 0.35);
+            this.updateHUD();
+        }
+    }
+
+    triggerPlayerOrbitalStrike(snake) {
+        if (!snake || !snake.isAlive) return;
+        const strike = snake.triggerOrbitalStrike(this.cellSize, this.gridWidth, this.gridHeight);
+        if (strike) {
+            this.orbitalStrikes.push(strike);
+            this.cameraShake = Math.max(this.cameraShake, 0.3);
+            if (window.particleEngine) {
+                window.particleEngine.addText('🎯 TARGET LOCKED!', strike.pixelX, strike.pixelY - 20, '#ff0055', 16);
+            }
             this.updateHUD();
         }
     }
@@ -1087,6 +1106,14 @@ class NeonSnakeGame {
 
         // Virtual Plasma Orbital Satellites button
         // Virtual Holographic Decoy button
+        // Virtual Ionized Orbital Strike button
+        const strikeTouchBtn = document.getElementById('touchStrike');
+        if (strikeTouchBtn) {
+            bindTouch('touchStrike', () => {
+                this.triggerPlayerOrbitalStrike(this.player1);
+            });
+        }
+
         const decoyTouchBtn = document.getElementById('touchDecoy');
         if (decoyTouchBtn) {
             bindTouch('touchDecoy', () => {
@@ -1143,6 +1170,7 @@ class NeonSnakeGame {
         this.obstacles = [];
         this.projectiles = [];
         this.decoys = [];
+        this.orbitalStrikes = [];
         this.mines = [];
         this.portals = [];
         this.replayBuffer = [];
@@ -1543,6 +1571,77 @@ class NeonSnakeGame {
                     if (decoy.owner) decoy.owner.score += 200;
                     decoy.life = 0; // consumed
                     break;
+                }
+            }
+        }
+    }
+
+    updateOrbitalStrikes(dt) {
+        for (let i = this.orbitalStrikes.length - 1; i >= 0; i--) {
+            const strike = this.orbitalStrikes[i];
+            if (!strike.hasFired) {
+                strike.lockTimer -= dt;
+                if (strike.lockTimer <= 0) {
+                    strike.hasFired = true;
+                    this.cameraShake = Math.max(this.cameraShake, 0.7);
+
+                    if (window.cyberAudio) window.cyberAudio.playOrbitalStrikeBlast();
+                    if (window.particleEngine) {
+                        window.particleEngine.spawnOrbitalBeamStrike(strike.pixelX, strike.pixelY, strike.radius);
+                        window.particleEngine.addText('⚡ ORBITAL IMPACT! +250', strike.pixelX, strike.pixelY - 24, '#ffe600', 20);
+                    }
+
+                    // Damage hostile snakes
+                    for (const other of this.snakes) {
+                        if (!other.isAlive || other === strike.owner || other.body.length === 0) continue;
+                        const hDist = Math.hypot(other.body[0].pixelX - strike.pixelX, other.body[0].pixelY - strike.pixelY);
+                        if (hDist <= strike.radius) {
+                            other.takeDamage(60);
+                            other.moveTimer = -0.8;
+                            if (strike.owner) strike.owner.score += 250;
+                            if (window.particleEngine) {
+                                window.particleEngine.addText('-60HP BOMBARDED!', other.body[0].pixelX, other.body[0].pixelY - 24, '#ffe600', 18);
+                            }
+                            this.checkGameOver();
+                        }
+                    }
+
+                    // Shatter obstacles in blast radius into energy cores
+                    this.obstacles = this.obstacles.filter(obs => {
+                        const ox = obs.x * this.cellSize + this.cellSize / 2;
+                        const oy = obs.y * this.cellSize + this.cellSize / 2;
+                        if (Math.hypot(ox - strike.pixelX, oy - strike.pixelY) <= strike.radius) {
+                            if (window.particleEngine) {
+                                window.particleEngine.spawnBurst(ox, oy, '#ffe600', 12, 3);
+                            }
+                            this.foods.push({
+                                x: obs.x,
+                                y: obs.y,
+                                pixelX: ox,
+                                pixelY: oy,
+                                type: 'normal',
+                                color: '#ffe600',
+                                points: 20,
+                                createdAt: performance.now()
+                            });
+                            if (strike.owner) strike.owner.score += 40;
+                            return false;
+                        }
+                        return true;
+                    });
+
+                    // Annihilate hostile projectiles in radius
+                    for (let pIdx = this.projectiles.length - 1; pIdx >= 0; pIdx--) {
+                        const proj = this.projectiles[pIdx];
+                        if (proj.owner !== strike.owner && Math.hypot(proj.x - strike.pixelX, proj.y - strike.pixelY) <= strike.radius) {
+                            this.projectiles.splice(pIdx, 1);
+                        }
+                    }
+                }
+            } else {
+                strike.beamLife -= dt;
+                if (strike.beamLife <= 0) {
+                    this.orbitalStrikes.splice(i, 1);
                 }
             }
         }
@@ -2336,6 +2435,7 @@ class NeonSnakeGame {
         this.updatePortals(dt);
         this.updateMines(dt);
         this.updateDecoys(dt);
+        this.updateOrbitalStrikes(dt);
 
         // Record Replay Frame for VCR Fatal Replay
         if (this.isRunning && !this.gameOver && this.player1 && this.player1.isAlive) {
@@ -2453,6 +2553,7 @@ class NeonSnakeGame {
         // 8. Draw Proximity Cyber Mines
         this.drawMines(ctx);
         this.drawDecoys(ctx);
+        this.drawOrbitalStrikes(ctx);
 
         // 9. Draw Foods & Powerups
         this.drawFoods(ctx);
@@ -2716,6 +2817,69 @@ class NeonSnakeGame {
             ctx.textAlign = 'center';
             ctx.fillText('MIRAGE', decoy.pixelX, decoy.pixelY - this.cellSize * 0.7);
 
+            ctx.restore();
+        }
+    }
+
+    drawOrbitalStrikes(ctx) {
+        for (const strike of this.orbitalStrikes) {
+            ctx.save();
+            if (!strike.hasFired) {
+                const t = 1 - (strike.lockTimer / 0.85);
+                const rot = Date.now() * 0.006;
+                ctx.translate(strike.pixelX, strike.pixelY);
+
+                // Outer rotating lock ring
+                ctx.strokeStyle = '#ff0055';
+                ctx.lineWidth = 2;
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = '#ff0055';
+                ctx.beginPath();
+                ctx.arc(0, 0, strike.radius * (1.3 - t * 0.3), 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Inner crosshair
+                ctx.rotate(rot);
+                ctx.strokeStyle = '#ffe600';
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.moveTo(-16, 0); ctx.lineTo(16, 0);
+                ctx.moveTo(0, -16); ctx.lineTo(0, 16);
+                ctx.stroke();
+
+                // Lock percentage text
+                ctx.rotate(-rot);
+                ctx.font = "900 10px 'Orbitron', monospace";
+                ctx.fillStyle = '#ff0055';
+                ctx.textAlign = 'center';
+                ctx.fillText(`LOCK: ${Math.round(t * 100)}%`, 0, -strike.radius * 0.9);
+            } else {
+                const alpha = Math.max(0.1, strike.beamLife / strike.maxBeamLife);
+                ctx.globalAlpha = alpha;
+
+                // Outer glow beam
+                ctx.fillStyle = 'rgba(255, 230, 0, 0.35)';
+                ctx.fillRect(strike.pixelX - 28, 0, 56, strike.pixelY);
+
+                // Mid beam
+                ctx.fillStyle = 'rgba(0, 240, 255, 0.65)';
+                ctx.fillRect(strike.pixelX - 14, 0, 28, strike.pixelY);
+
+                // Core white hot laser pillar
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = 30;
+                ctx.shadowColor = '#ffe600';
+                ctx.fillRect(strike.pixelX - 5, 0, 10, strike.pixelY);
+
+                // Ground blast ring
+                ctx.beginPath();
+                ctx.arc(strike.pixelX, strike.pixelY, strike.radius * (1 - alpha * 0.3), 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 230, 0, 0.4)';
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
             ctx.restore();
         }
     }
@@ -3192,6 +3356,11 @@ class NeonSnakeGame {
                 } else {
                     badges += `<span class="badge decoy" style="border-color:#00f0ff; color:#00f0ff; box-shadow:0 0 10px #00f0ff;">DECOY [1] READY</span>`;
                 }
+                if (this.player1.orbitalStrikeCooldown > 0) {
+                    badges += `<span class="badge strike" style="border-color:#ffe600; color:#ffe600;">STRIKE CD (${Math.ceil(this.player1.orbitalStrikeCooldown)}s)</span>`;
+                } else {
+                    badges += `<span class="badge strike" style="border-color:#ffe600; color:#ffe600; box-shadow:0 0 10px #ffe600;">STRIKE [2] READY</span>`;
+                }
                 if (this.player1.orbitalSatellitesActive) {
                     badges += `<span class="badge satellite" style="border-color:#38bdf8; color:#38bdf8; box-shadow:0 0 10px #38bdf8;">ORBITAL SATELLITES (${Math.ceil(this.player1.orbitalSatellitesTimer)}s)</span>`;
                 }
@@ -3246,6 +3415,7 @@ class NeonSnakeGame {
             `PHOTON BARRAGES: ${p?.photonBarrageCount || 0} TRIPLE SALVOS`,
             `ORBITAL SATS   : ${p?.orbitalSatellitesCount || 0} DEPLOYMENTS`,
             `HOLO DECOYS    : ${p?.holoDecoyCount || 0} CONCEALMENTS`,
+            `ORBITAL STRIKES: ${p?.orbitalStrikeCount || 0} BOMBARDMENTS`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,

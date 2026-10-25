@@ -91,6 +91,8 @@ class CyberSnake {
         this.orbitalSatellitesCount = 0;
         this.holoDecoyCooldown = 0;
         this.holoDecoyCount = 0;
+        this.orbitalStrikeCooldown = 0;
+        this.orbitalStrikeCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -327,6 +329,38 @@ class CyberSnake {
         };
     }
 
+    triggerOrbitalStrike(cellSize = 20, gridWidth = 36, gridHeight = 36) {
+        if (this.orbitalStrikeCooldown > 0 || !this.isAlive || this.body.length === 0) return null;
+        this.orbitalStrikeCooldown = 11.0;
+        this.orbitalStrikeCount = (this.orbitalStrikeCount || 0) + 1;
+        this.score += 150;
+
+        const head = this.body[0];
+        const targetGridX = (head.x + this.dir.x * 6 + gridWidth * 10) % gridWidth;
+        const targetGridY = (head.y + this.dir.y * 6 + gridHeight * 10) % gridHeight;
+        const pixelX = targetGridX * cellSize + cellSize / 2;
+        const pixelY = targetGridY * cellSize + cellSize / 2;
+
+        if (window.cyberAudio) {
+            window.cyberAudio.playOrbitalStrikeTarget();
+            if (this.id === 'player1') window.cyberAudio.announce('Orbital laser bombardment locked', true);
+        }
+
+        return {
+            targetX: targetGridX,
+            targetY: targetGridY,
+            pixelX: pixelX,
+            pixelY: pixelY,
+            lockTimer: 0.85,
+            hasFired: false,
+            beamLife: 0.45,
+            maxBeamLife: 0.45,
+            owner: this,
+            radius: cellSize * 2.8,
+            color: '#ffe600'
+        };
+    }
+
     setOverclock(active) {
         if (active && this.overclockEnergy > 10 && this.isAlive) {
             if (!this.isOverclocked && window.cyberAudio) {
@@ -498,6 +532,7 @@ class CyberSnake {
         }
         if (this.orbitalSatellitesCooldown > 0) this.orbitalSatellitesCooldown -= dt;
         if (this.holoDecoyCooldown > 0) this.holoDecoyCooldown -= dt;
+        if (this.orbitalStrikeCooldown > 0) this.orbitalStrikeCooldown -= dt;
 
         // Weapon & Ammo Cooldown
         if (this.ammoCooldown > 0) this.ammoCooldown -= dt;
