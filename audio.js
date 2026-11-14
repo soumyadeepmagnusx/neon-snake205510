@@ -1202,6 +1202,43 @@ class CyberAudioEngine {
         osc.stop(now + 0.32);
     }
 
+    playClusterMineDrop() {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+        [520, 680, 840].forEach((freq, i) => {
+            const time = now + i * 0.05;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, time);
+            osc.frequency.exponentialRampToValueAtTime(freq * 0.6, time + 0.12);
+            gain.gain.setValueAtTime(0.25, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.12);
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+            osc.start(time);
+            osc.stop(time + 0.12);
+        });
+    }
+
+    playClusterMineDetonate() {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(45, now + 0.38);
+        gain.gain.setValueAtTime(0.45, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.38);
+    }
+
     // Cyber Voice Announcer System
     announce(text, priority = false) {
         if (this.isMuted) return;

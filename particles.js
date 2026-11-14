@@ -523,6 +523,25 @@ class ParticleEngine {
         }
     }
 
+    spawnClusterShockwaves(x, y) {
+        this.shockwaves.push(new Shockwave(x, y, '#c084fc', 110, 0.45));
+        this.shockwaves.push(new Shockwave(x, y, '#ffffff', 65, 0.25));
+        for (let i = 0; i < 28; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const a = (i * Math.PI * 2) / 28;
+            const spd = Math.random() * 5 + 3;
+            this.particles.push(new Particle(
+                x, y,
+                Math.cos(a) * spd,
+                Math.sin(a) * spd,
+                i % 2 === 0 ? '#c084fc' : '#ffffff',
+                Math.random() * 3 + 2,
+                0.45,
+                'spark'
+            ));
+        }
+    }
+
     spawnChronoRecallImplosion(x1, y1, x2, y2) {
         this.shockwaves.push(new Shockwave(x1, y1, '#b026ff', 90, 0.4));
         this.shockwaves.push(new Shockwave(x2, y2, '#00f0ff', 130, 0.5));

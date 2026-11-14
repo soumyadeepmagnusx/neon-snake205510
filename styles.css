@@ -492,6 +492,13 @@ canvas {
     box-shadow: 0 0 10px rgba(255, 230, 0, 0.5);
 }
 
+.badge.cluster {
+    background: rgba(192, 132, 252, 0.25);
+    border: 1px solid #c084fc;
+    color: #c084fc;
+    box-shadow: 0 0 10px rgba(192, 132, 252, 0.5);
+}
+
 .badge.recall {
     background: rgba(176, 38, 255, 0.25);
     border: 1px solid var(--neon-purple);
@@ -897,6 +904,18 @@ canvas {
 
 .touch-btn.strike-btn:active {
     background: #ffe600;
+    color: #000;
+}
+
+.touch-btn.cluster-btn {
+    border: 2px solid #fff;
+    background: #9333ea;
+    box-shadow: 4px 4px 0px #c084fc, 0 0 14px #c084fc;
+    color: #fff;
+}
+
+.touch-btn.cluster-btn:active {
+    background: #c084fc;
     color: #000;
 }
 

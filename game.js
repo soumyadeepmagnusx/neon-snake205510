@@ -294,6 +294,11 @@ class NeonSnakeGame {
                 }
 
                 // Holographic Mirage Decoy (1)
+                // EMP Mine Cluster (4)
+                if (e.code === 'Digit4' || e.code === 'Numpad4') {
+                    this.deployPlayerMineCluster(this.player1);
+                }
+
                 // Chrono Anchor Recall (3)
                 if (e.code === 'Digit3' || e.code === 'Numpad3') {
                     this.triggerPlayerChronoAnchor(this.player1);
@@ -428,6 +433,18 @@ class NeonSnakeGame {
         if (!snake || !snake.isAlive || snake.body.length === 0) return;
         const triggered = snake.triggerOrbitalSatellites();
         if (triggered) {
+            this.cameraShake = Math.max(this.cameraShake, 0.35);
+            this.updateHUD();
+        }
+    }
+
+    deployPlayerMineCluster(snake) {
+        if (!snake || !snake.isAlive) return;
+        const cluster = snake.deployMineCluster();
+        if (cluster && Array.isArray(cluster)) {
+            for (const m of cluster) {
+                this.mines.push(m);
+            }
             this.cameraShake = Math.max(this.cameraShake, 0.35);
             this.updateHUD();
         }
@@ -1133,6 +1150,14 @@ class NeonSnakeGame {
         // Virtual Holographic Decoy button
         // Virtual Ionized Orbital Strike button
         // Virtual Chrono Recall button
+        // Virtual EMP Cluster button
+        const clusterTouchBtn = document.getElementById('touchCluster');
+        if (clusterTouchBtn) {
+            bindTouch('touchCluster', () => {
+                this.deployPlayerMineCluster(this.player1);
+            });
+        }
+
         const recallTouchBtn = document.getElementById('touchRecall');
         if (recallTouchBtn) {
             bindTouch('touchRecall', () => {
@@ -1460,6 +1485,7 @@ class NeonSnakeGame {
         const chainBonus = chainIndex * 150;
         if (owner) {
             owner.score += chainBonus;
+            if (mine.isCluster) owner.score += 220;
             if (chainIndex > 1) {
                 owner.mineChainCount = (owner.mineChainCount || 0) + 1;
             }
@@ -1469,8 +1495,13 @@ class NeonSnakeGame {
             if (chainIndex > 1) {
                 window.particleEngine.spawnMineChainExplosion(mine.pixelX, mine.pixelY, chainIndex);
             } else {
-                window.particleEngine.spawnMineExplosion(mine.pixelX, mine.pixelY);
-                window.particleEngine.addText('MINE DETONATED!', mine.pixelX, mine.pixelY - 18, '#ff0055', 18);
+                if (mine.isCluster) {
+                    window.particleEngine.spawnClusterShockwaves(mine.pixelX, mine.pixelY);
+                    window.particleEngine.addText('⚡ EMP PULSE! +220', mine.pixelX, mine.pixelY - 18, '#c084fc', 18);
+                } else {
+                    window.particleEngine.spawnMineExplosion(mine.pixelX, mine.pixelY);
+                    window.particleEngine.addText('MINE DETONATED!', mine.pixelX, mine.pixelY - 18, '#ff0055', 18);
+                }
             }
         }
 
@@ -1481,7 +1512,11 @@ class NeonSnakeGame {
                     window.cyberAudio.announce('Maximum chain detonation', true);
                 }
             } else {
-                window.cyberAudio.playMineDetonate();
+                if (mine.isCluster) {
+                    window.cyberAudio.playClusterMineDetonate();
+                } else {
+                    window.cyberAudio.playMineDetonate();
+                }
             }
         }
 
@@ -2773,7 +2808,7 @@ class NeonSnakeGame {
             ctx.translate(mine.pixelX, mine.pixelY);
 
             const isArmed = mine.isArmed;
-            const glowColor = isArmed ? '#ff0055' : '#ffe600';
+            const glowColor = mine.isCluster ? (isArmed ? '#c084fc' : '#e9d5ff') : (isArmed ? '#ff0055' : '#ffe600');
             ctx.shadowBlur = isArmed ? 16 : 8;
             ctx.shadowColor = glowColor;
 
@@ -3451,6 +3486,11 @@ class NeonSnakeGame {
                 } else {
                     badges += `<span class="badge recall" style="border-color:#b026ff; color:#b026ff; box-shadow:0 0 10px #b026ff;">ANCHOR [3] READY</span>`;
                 }
+                if (this.player1.mineClusterCooldown > 0) {
+                    badges += `<span class="badge cluster" style="border-color:#c084fc; color:#c084fc;">CLUSTER CD (${Math.ceil(this.player1.mineClusterCooldown)}s)</span>`;
+                } else {
+                    badges += `<span class="badge cluster" style="border-color:#c084fc; color:#c084fc; box-shadow:0 0 10px #c084fc;">CLUSTER [4] READY</span>`;
+                }
                 if (this.player1.orbitalSatellitesActive) {
                     badges += `<span class="badge satellite" style="border-color:#38bdf8; color:#38bdf8; box-shadow:0 0 10px #38bdf8;">ORBITAL SATELLITES (${Math.ceil(this.player1.orbitalSatellitesTimer)}s)</span>`;
                 }
@@ -3507,6 +3547,7 @@ class NeonSnakeGame {
             `HOLO DECOYS    : ${p?.holoDecoyCount || 0} CONCEALMENTS`,
             `ORBITAL STRIKES: ${p?.orbitalStrikeCount || 0} BOMBARDMENTS`,
             `CHRONO RECALLS : ${p?.chronoAnchorCount || 0} QUANTUM REWINDS`,
+            `EMP CLUSTERS   : ${p?.mineClusterCount || 0} TRI-DETONATIONS`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,

@@ -96,6 +96,8 @@ class CyberSnake {
         this.chronoAnchor = null;
         this.chronoAnchorCooldown = 0;
         this.chronoAnchorCount = 0;
+        this.mineClusterCooldown = 0;
+        this.mineClusterCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -473,6 +475,71 @@ class CyberSnake {
         };
     }
 
+    deployMineCluster() {
+        if (this.mineClusterCooldown > 0 || !this.isAlive || this.body.length === 0) return null;
+        this.mineClusterCooldown = 10.0;
+        this.mineClusterCount = (this.mineClusterCount || 0) + 1;
+        this.score += 160;
+
+        if (window.cyberAudio) {
+            window.cyberAudio.playClusterMineDrop();
+            if (this.id === 'player1') window.cyberAudio.announce('Pulse cluster deployed', true);
+        }
+
+        const tail = this.body[this.body.length - 1];
+        const perpX = -this.dir.y;
+        const perpY = this.dir.x;
+
+        const cluster = [
+            {
+                gridX: tail.x,
+                gridY: tail.y,
+                pixelX: tail.pixelX,
+                pixelY: tail.pixelY,
+                owner: this,
+                armTimer: 0.45,
+                isArmed: false,
+                isCluster: true,
+                clusterColor: '#c084fc',
+                life: 22,
+                radius: 16
+            },
+            {
+                gridX: (tail.x + perpX + 36) % 36,
+                gridY: (tail.y + perpY + 36) % 36,
+                pixelX: tail.pixelX + perpX * 18,
+                pixelY: tail.pixelY + perpY * 18,
+                owner: this,
+                armTimer: 0.55,
+                isArmed: false,
+                isCluster: true,
+                clusterColor: '#c084fc',
+                life: 22,
+                radius: 16
+            },
+            {
+                gridX: (tail.x - perpX + 36) % 36,
+                gridY: (tail.y - perpY + 36) % 36,
+                pixelX: tail.pixelX - perpX * 18,
+                pixelY: tail.pixelY - perpY * 18,
+                owner: this,
+                armTimer: 0.65,
+                isArmed: false,
+                isCluster: true,
+                clusterColor: '#c084fc',
+                life: 22,
+                radius: 16
+            }
+        ];
+
+        if (window.particleEngine) {
+            window.particleEngine.addText('💣 EMP CLUSTER! +160', tail.pixelX, tail.pixelY - 20, '#c084fc', 18);
+        }
+
+        return cluster;
+        };
+    }
+
     shootPlasma() {
         if (this.ammo <= 0 || this.ammoCooldown > 0 || !this.isAlive) return null;
         this.ammo--;
@@ -610,6 +677,7 @@ class CyberSnake {
         if (this.holoDecoyCooldown > 0) this.holoDecoyCooldown -= dt;
         if (this.orbitalStrikeCooldown > 0) this.orbitalStrikeCooldown -= dt;
         if (this.chronoAnchorCooldown > 0) this.chronoAnchorCooldown -= dt;
+        if (this.mineClusterCooldown > 0) this.mineClusterCooldown -= dt;
         if (this.chronoAnchor) {
             this.chronoAnchor.life -= dt;
             this.chronoAnchor.pulse = (this.chronoAnchor.pulse + dt * 5) % (Math.PI * 2);
