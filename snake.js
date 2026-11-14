@@ -111,6 +111,8 @@ class CyberSnake {
         this.glitchShieldTimer = 0;
         this.glitchShieldCooldown = 0;
         this.glitchCount = 0;
+        this.solarCleanserCooldown = 0;
+        this.solarCleanserCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -601,6 +603,26 @@ class CyberSnake {
         return true;
     }
 
+    triggerSolarCleanser() {
+        if (this.solarCleanserCooldown > 0 || !this.isAlive || this.body.length === 0) return false;
+        this.solarCleanserCooldown = 16.0;
+        this.solarCleanserCount = (this.solarCleanserCount || 0) + 1;
+        this.score += 250;
+
+        const head = this.body[0];
+        if (window.cyberAudio) {
+            window.cyberAudio.playSolarFlareCleanser();
+            if (this.id === 'player1') window.cyberAudio.announce('Solar radiation sweep unleashed', true);
+        }
+
+        if (window.particleEngine) {
+            window.particleEngine.spawnSolarCorona(head.pixelX, head.pixelY);
+            window.particleEngine.addText('☀️ ORBITAL SOLAR FLARE! +250', head.pixelX, head.pixelY - 24, '#f59e0b', 18);
+        }
+
+        return true;
+    }
+
     triggerPhaseMirage() {
         if (this.glitchShieldCooldown > 0 || !this.isAlive || this.body.length === 0) return false;
         this.glitchShieldTimer = 4.5;
@@ -846,6 +868,7 @@ class CyberSnake {
         if (this.magnetCooldown > 0) this.magnetCooldown -= dt;
         if (this.glitchShieldTimer > 0) this.glitchShieldTimer -= dt;
         if (this.glitchShieldCooldown > 0) this.glitchShieldCooldown -= dt;
+        if (this.solarCleanserCooldown > 0) this.solarCleanserCooldown -= dt;
         if (this.chronoAnchor) {
             this.chronoAnchor.life -= dt;
             this.chronoAnchor.pulse = (this.chronoAnchor.pulse + dt * 5) % (Math.PI * 2);

@@ -523,6 +523,25 @@ class ParticleEngine {
         }
     }
 
+    spawnSolarCorona(x, y) {
+        this.shockwaves.push(new Shockwave(x, y, '#f59e0b', 240, 0.65));
+        this.shockwaves.push(new Shockwave(x, y, '#fbbf24', 160, 0.45));
+        for (let i = 0; i < 35; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const a = (i * Math.PI * 2) / 35;
+            const spd = Math.random() * 8 + 4;
+            this.particles.push(new Particle(
+                x, y,
+                Math.cos(a) * spd,
+                Math.sin(a) * spd,
+                i % 2 === 0 ? '#f59e0b' : '#fef08a',
+                Math.random() * 4 + 2,
+                0.6,
+                'spark'
+            ));
+        }
+    }
+
     spawnGlitchMatrix(x, y) {
         this.shockwaves.push(new Shockwave(x, y, '#ec4899', 110, 0.4));
         for (let i = 0; i < 20; i++) {

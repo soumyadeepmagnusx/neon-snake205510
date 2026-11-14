@@ -297,6 +297,9 @@ class NeonSnakeGame {
 
                 // Holographic Mirage Decoy (1)
                 // Tachyon Afterburner (6)
+                if (e.code === 'Digit0' || e.code === 'Numpad0') {
+                    this.triggerPlayerSolarCleanser(this.player1);
+                }
                 if (e.code === 'Digit9' || e.code === 'Numpad9') {
                     this.triggerPlayerPhaseMirage(this.player1);
                 }
@@ -456,6 +459,53 @@ class NeonSnakeGame {
         if (triggered) {
             this.cameraShake = Math.max(this.cameraShake, 0.35);
             this.updateHUD();
+        }
+    }
+
+    triggerPlayerSolarCleanser(snake) {
+        if (!snake || !snake.isAlive) return;
+        const triggered = snake.triggerSolarCleanser();
+        if (triggered) {
+            this.cameraShake = Math.max(this.cameraShake, 0.6);
+            // Incinerate hostile projectiles into points
+            let interceptedCount = 0;
+            for (let i = this.projectiles.length - 1; i >= 0; i--) {
+                const p = this.projectiles[i];
+                if (p.owner !== snake) {
+                    interceptedCount++;
+                    if (window.particleEngine) {
+                        window.particleEngine.spawnBurst(p.x, p.y, '#f59e0b', 8, 3);
+                    }
+                    this.projectiles.splice(i, 1);
+                }
+            }
+            if (interceptedCount > 0) {
+                snake.score += interceptedCount * 25;
+                if (window.particleEngine) {
+                    window.particleEngine.addText(`+${interceptedCount * 25} SWEEP BONUS!`, snake.body[0].pixelX, snake.body[0].pixelY - 45, '#f59e0b', 16);
+                }
+            }
+            // Inflict solar thermal damage on rival snakes
+            for (const other of this.snakes) {
+                if (other !== snake && other.isAlive) {
+                    other.takeDamage(25);
+                    if (window.particleEngine && other.body.length > 0) {
+                        window.particleEngine.spawnBurst(other.body[0].pixelX, other.body[0].pixelY, '#f59e0b', 12, 4);
+                        window.particleEngine.addText('-25 SOLAR FLARE!', other.body[0].pixelX, other.body[0].pixelY - 20, '#f59e0b', 14);
+                    }
+                }
+            }
+            // Incinerate up to 3 obstacles into energy
+            if (this.obstacles.length > 0) {
+                const removeCount = Math.min(this.obstacles.length, 3);
+                for (let r = 0; r < removeCount; r++) {
+                    const obs = this.obstacles.pop();
+                    if (window.particleEngine) {
+                        window.particleEngine.spawnBurst(obs.x * this.cellSize + this.cellSize / 2, obs.y * this.cellSize + this.cellSize / 2, '#f59e0b', 8, 3);
+                    }
+                    snake.score += 30;
+                }
+            }
         }
     }
 
@@ -1381,6 +1431,13 @@ class NeonSnakeGame {
         // Virtual Chrono Recall button
         // Virtual Tachyon Afterburner button
         const afterburnerTouchBtn = document.getElementById('touchAfterburner');
+        const solarTouchBtn = document.getElementById('touchSolar');
+        if (solarTouchBtn) {
+            bindTouch('touchSolar', () => {
+                this.triggerPlayerSolarCleanser(this.player1);
+            });
+        }
+
         const glitchTouchBtn = document.getElementById('touchGlitch');
         if (glitchTouchBtn) {
             bindTouch('touchGlitch', () => {
@@ -3882,6 +3939,11 @@ class NeonSnakeGame {
                 } else {
                     badges += `<span class="badge sonic" style="border-color:#f97316; color:#f97316; box-shadow:0 0 10px #f97316;">SONIC [5] READY</span>`;
                 }
+                if (this.player1.solarCleanserCooldown > 0) {
+                    badges += `<span class="badge solar" style="border-color:#f59e0b; color:#f59e0b;">CLEANSE CD (${Math.ceil(this.player1.solarCleanserCooldown)}s)</span>`;
+                } else {
+                    badges += `<span class="badge solar" style="border-color:#f59e0b; color:#f59e0b; box-shadow:0 0 10px #f59e0b;">CLEANSE [0] READY</span>`;
+                }
                 if (this.player1.glitchShieldTimer > 0) {
                     badges += `<span class="badge glitch" style="border-color:#ec4899; color:#ec4899; box-shadow:0 0 10px #ec4899;">MIRAGE (${Math.ceil(this.player1.glitchShieldTimer)}s)</span>`;
                 } else if (this.player1.glitchShieldCooldown > 0) {
@@ -3970,6 +4032,7 @@ class NeonSnakeGame {
             `AEGIS BARRIERS : ${p?.barricadeCount || 0} FORCEFIELDS`,
             `GRAVITON PULLS : ${p?.magnetCount || 0} SINGULARITIES`,
             `PHASE MIRAGES  : ${p?.glitchCount || 0} DISPLACEMENTS`,
+            `SOLAR CLEANSES : ${p?.solarCleanserCount || 0} TOTAL SWEEPS`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,
