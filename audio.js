@@ -1222,6 +1222,25 @@ class CyberAudioEngine {
         });
     }
 
+    playRankUp() {
+        this.init();
+        if (this.isMuted) return;
+        const now = this.ctx.currentTime;
+        const notes = [330, 440, 660, 880];
+        notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+            gain.gain.setValueAtTime(0.3, now + idx * 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.25);
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+            osc.start(now + idx * 0.06);
+            osc.stop(now + idx * 0.06 + 0.25);
+        });
+    }
+
     playSolarFlareCleanser() {
         this.init();
         if (this.isMuted) return;

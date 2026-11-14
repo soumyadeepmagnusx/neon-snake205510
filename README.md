@@ -96,6 +96,19 @@ A high-octane synthwave & cyberpunk canvas arcade game built with vanilla JavaSc
 
 ---
 
+### ⚡ Cyberpunk Overdrive Combo Multiplier & Combat Rating System
+Track your tactical performance in real time with the **Combat Rating System**:
+- **[D] DISCONNECTED (1.0x)**: Baseline cyber combat output.
+- **[C] CYBER-INITIATE (1.5x)**: Emerging threat level.
+- **[B] BIT-RUNNER (2.0x)**: Rapid tactical chaining.
+- **[A] APEX-PREDATOR (3.0x)**: Aggressive arena dominance.
+- **[S] SYNAPSE-OVERDRIVE (5.0x)**: Peak cybernetic synchronization.
+- **[SSS] CYBER-GOD (8.0x)**: Maximum combat heat with pulsating rainbow aura and immense 8x score scaling on all gameplay actions!
+
+Build heat by harvesting cores (+4), deploying tactical cyberware (+12), intercepting hostile fire (+10), and slaying rival bosses (+35). Maintain aggressive momentum before combat heat decays!
+
+---
+
 ## 🕹️ Controls Guide
 
 | Action | Player 1 (Desktop) | Player 2 (Local 2P) | Gamepad (Controller) | Mobile / Touch |

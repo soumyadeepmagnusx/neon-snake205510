@@ -26,6 +26,12 @@ class NeonSnakeGame {
         this.highScore = parseInt(localStorage.getItem('neonSnake_highScore') || '0', 10);
         this.combo = 1;
         this.comboTimer = 0;
+        this.combatHeat = 0;
+        this.currentRank = "D";
+        this.currentMultiplier = 1.0;
+        this.peakRank = "D";
+        this.peakMultiplier = 1.0;
+        this.totalHeatGenerated = 0;
 
         // Entities & Combat
         this.snakes = [];
@@ -460,6 +466,51 @@ class NeonSnakeGame {
             this.cameraShake = Math.max(this.cameraShake, 0.35);
             this.updateHUD();
         }
+    }
+
+    getRankData(heat) {
+        if (heat >= 95) return { tier: 'SSS', name: 'CYBER-GOD', mult: 8.0, color: '#f43f5e' };
+        if (heat >= 80) return { tier: 'S', name: 'SYNAPSE-OVERDRIVE', mult: 5.0, color: '#ec4899' };
+        if (heat >= 60) return { tier: 'A', name: 'APEX-PREDATOR', mult: 3.0, color: '#f59e0b' };
+        if (heat >= 40) return { tier: 'B', name: 'BIT-RUNNER', mult: 2.0, color: '#34d399' };
+        if (heat >= 20) return { tier: 'C', name: 'CYBER-INITIATE', mult: 1.5, color: '#38bdf8' };
+        return { tier: 'D', name: 'DISCONNECTED', mult: 1.0, color: '#94a3b8' };
+    }
+
+    addCombatHeat(amount) {
+        const prevRank = this.getRankData(this.combatHeat);
+        this.combatHeat = Math.min(100, this.combatHeat + amount);
+        this.totalHeatGenerated = (this.totalHeatGenerated || 0) + amount;
+        const newRank = this.getRankData(this.combatHeat);
+
+        if (newRank.mult > this.peakMultiplier) {
+            this.peakMultiplier = newRank.mult;
+            this.peakRank = newRank.tier;
+        }
+
+        if (newRank.mult > prevRank.mult) {
+            this.currentRank = newRank.tier;
+            this.currentMultiplier = newRank.mult;
+            if (window.cyberAudio) {
+                window.cyberAudio.playRankUp();
+                if (newRank.tier === 'SSS') {
+                    window.cyberAudio.announce('Cyber-god overdrive engaged', true);
+                }
+            }
+            if (window.particleEngine && this.player1 && this.player1.body.length > 0) {
+                const head = this.player1.body[0];
+                window.particleEngine.spawnRankUpParticles(head.pixelX, head.pixelY, newRank.color);
+                window.particleEngine.addText(`RANK [${newRank.tier}] ${newRank.name}! ${newRank.mult}X!`, head.pixelX, head.pixelY - 32, newRank.color, 18);
+            }
+        }
+        this.currentRank = newRank.tier;
+        this.currentMultiplier = newRank.mult;
+    }
+
+    recalculateCombatRank() {
+        const rank = this.getRankData(this.combatHeat);
+        this.currentRank = rank.tier;
+        this.currentMultiplier = rank.mult;
     }
 
     triggerPlayerSolarCleanser(snake) {
@@ -2828,6 +2879,12 @@ class NeonSnakeGame {
             this.cameraShake = Math.max(0, this.cameraShake - dt * 2.0);
         }
 
+        // Combat Heat decay & Rank System
+        if (this.combatHeat > 0) {
+            this.combatHeat = Math.max(0, this.combatHeat - 4.5 * dt);
+            this.recalculateCombatRank();
+        }
+
         // Combo decay
         if (this.comboTimer > 0) {
             this.comboTimer -= dt;
@@ -3872,6 +3929,13 @@ class NeonSnakeGame {
 
         const comboDisp = document.getElementById('comboDisplay');
         if (comboDisp) comboDisp.innerText = `x${this.combo}`;
+        const rankDisp = document.getElementById('rankDisplay');
+        if (rankDisp) {
+            const curRank = this.getRankData(this.combatHeat);
+            rankDisp.innerText = `[${curRank.tier}] ${curRank.mult}x`;
+            rankDisp.style.color = curRank.color;
+        }
+
 
         if (this.player1) {
             const boostBar = document.getElementById('boostFill');
@@ -3939,6 +4003,8 @@ class NeonSnakeGame {
                 } else {
                     badges += `<span class="badge sonic" style="border-color:#f97316; color:#f97316; box-shadow:0 0 10px #f97316;">SONIC [5] READY</span>`;
                 }
+                const activeRank = this.getRankData(this.combatHeat);
+                badges += `<span class="badge combat-rank" style="border-color:${activeRank.color}; color:${activeRank.color}; box-shadow:0 0 10px ${activeRank.color};">RANK [${activeRank.tier}] ${activeRank.mult}X</span>`;
                 if (this.player1.solarCleanserCooldown > 0) {
                     badges += `<span class="badge solar" style="border-color:#f59e0b; color:#f59e0b;">CLEANSE CD (${Math.ceil(this.player1.solarCleanserCooldown)}s)</span>`;
                 } else {
@@ -4033,6 +4099,8 @@ class NeonSnakeGame {
             `GRAVITON PULLS : ${p?.magnetCount || 0} SINGULARITIES`,
             `PHASE MIRAGES  : ${p?.glitchCount || 0} DISPLACEMENTS`,
             `SOLAR CLEANSES : ${p?.solarCleanserCount || 0} TOTAL SWEEPS`,
+            `PEAK RATING    : [${this.peakRank || "D"}] ${this.peakMultiplier || 1.0}X`,
+            `HEAT OUTPUT    : ${Math.round(this.totalHeatGenerated || 0)} KW`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,
