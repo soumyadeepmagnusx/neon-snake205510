@@ -1093,3 +1093,22 @@ canvas {
     background: #a855f7;
     color: #000;
 }
+
+.badge.glitch {
+    background: rgba(236, 72, 153, 0.25);
+    border: 1px solid #ec4899;
+    color: #ec4899;
+    box-shadow: 0 0 8px rgba(236, 72, 153, 0.5);
+}
+
+.touch-btn.glitch-btn {
+    border: 2px solid #fff;
+    background: #db2777;
+    box-shadow: 4px 4px 0px #ec4899, 0 0 14px #ec4899;
+    color: #fff;
+}
+
+.touch-btn.glitch-btn:active {
+    background: #ec4899;
+    color: #000;
+}

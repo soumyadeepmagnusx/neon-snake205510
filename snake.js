@@ -108,6 +108,9 @@ class CyberSnake {
         this.magnetTimer = 0;
         this.magnetCooldown = 0;
         this.magnetCount = 0;
+        this.glitchShieldTimer = 0;
+        this.glitchShieldCooldown = 0;
+        this.glitchCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -598,6 +601,27 @@ class CyberSnake {
         return true;
     }
 
+    triggerPhaseMirage() {
+        if (this.glitchShieldCooldown > 0 || !this.isAlive || this.body.length === 0) return false;
+        this.glitchShieldTimer = 4.5;
+        this.glitchShieldCooldown = 14.0;
+        this.glitchCount = (this.glitchCount || 0) + 1;
+        this.score += 210;
+
+        const head = this.body[0];
+        if (window.cyberAudio) {
+            window.cyberAudio.playGlitchShield();
+            if (this.id === 'player1') window.cyberAudio.announce('Phase mirage matrix armed', true);
+        }
+
+        if (window.particleEngine) {
+            window.particleEngine.spawnGlitchMatrix(head.pixelX, head.pixelY);
+            window.particleEngine.addText('⚡ PHASE MIRAGE ARMED! +210', head.pixelX, head.pixelY - 24, '#ec4899', 18);
+        }
+
+        return true;
+    }
+
     triggerMagnetoCollector() {
         if (this.magnetCooldown > 0 || !this.isAlive || this.body.length === 0) return false;
         this.magnetTimer = 6.0;
@@ -701,6 +725,24 @@ class CyberSnake {
     }
 
     takeDamage(amount = 25) {
+        if (this.glitchShieldTimer > 0 && this.body.length > 0) {
+            this.glitchShieldTimer = 0;
+            this.spawnShieldTimer = 1.2;
+            const perpX = -this.dir.y * 2;
+            const perpY = this.dir.x * 2;
+            for (const seg of this.body) {
+                seg.x = ((seg.x + perpX) % 40 + 40) % 40;
+                seg.y = ((seg.y + perpY) % 30 + 30) % 30;
+                seg.pixelX = seg.x * 20 + 10;
+                seg.pixelY = seg.y * 20 + 10;
+            }
+            if (window.cyberAudio) window.cyberAudio.playGlitchDisplacement();
+            if (window.particleEngine) {
+                window.particleEngine.spawnGlitchDisplacement(this.body[0].pixelX, this.body[0].pixelY);
+                window.particleEngine.addText('⚡ QUANTUM DISPLACEMENT!', this.body[0].pixelX, this.body[0].pixelY - 28, '#ec4899', 18);
+            }
+            return false;
+        }
         if (this.spawnShieldTimer > 0 || this.empShieldTimer > 0) return false;
         if (window.cyberAudio) window.cyberAudio.playPlasmaHit();
 
@@ -802,6 +844,8 @@ class CyberSnake {
         if (this.barricadeCooldown > 0) this.barricadeCooldown -= dt;
         if (this.magnetTimer > 0) this.magnetTimer -= dt;
         if (this.magnetCooldown > 0) this.magnetCooldown -= dt;
+        if (this.glitchShieldTimer > 0) this.glitchShieldTimer -= dt;
+        if (this.glitchShieldCooldown > 0) this.glitchShieldCooldown -= dt;
         if (this.chronoAnchor) {
             this.chronoAnchor.life -= dt;
             this.chronoAnchor.pulse = (this.chronoAnchor.pulse + dt * 5) % (Math.PI * 2);

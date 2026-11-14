@@ -523,6 +523,42 @@ class ParticleEngine {
         }
     }
 
+    spawnGlitchMatrix(x, y) {
+        this.shockwaves.push(new Shockwave(x, y, '#ec4899', 110, 0.4));
+        for (let i = 0; i < 20; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const a = (i * Math.PI * 2) / 20;
+            const spd = Math.random() * 4 + 2;
+            this.particles.push(new Particle(
+                x, y,
+                Math.cos(a) * spd,
+                Math.sin(a) * spd,
+                i % 2 === 0 ? '#ec4899' : '#06b6d4',
+                Math.random() * 3 + 2,
+                0.4,
+                'spark'
+            ));
+        }
+    }
+
+    spawnGlitchDisplacement(x, y) {
+        this.shockwaves.push(new Shockwave(x, y, '#ec4899', 150, 0.45));
+        for (let i = 0; i < 28; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const a = Math.random() * Math.PI * 2;
+            const spd = Math.random() * 7 + 3;
+            this.particles.push(new Particle(
+                x, y,
+                Math.cos(a) * spd,
+                Math.sin(a) * spd,
+                i % 3 === 0 ? '#ec4899' : (i % 3 === 1 ? '#06b6d4' : '#f43f5e'),
+                Math.random() * 3.5 + 2,
+                0.5,
+                'spark'
+            ));
+        }
+    }
+
     spawnMagnetoFlux(x, y) {
         this.shockwaves.push(new Shockwave(x, y, '#a855f7', 140, 0.5));
         for (let i = 0; i < 24; i++) {

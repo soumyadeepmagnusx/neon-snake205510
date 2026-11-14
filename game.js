@@ -297,6 +297,9 @@ class NeonSnakeGame {
 
                 // Holographic Mirage Decoy (1)
                 // Tachyon Afterburner (6)
+                if (e.code === 'Digit9' || e.code === 'Numpad9') {
+                    this.triggerPlayerPhaseMirage(this.player1);
+                }
                 if (e.code === 'Digit8' || e.code === 'Numpad8') {
                     this.triggerPlayerMagnetoCollector(this.player1);
                 }
@@ -453,6 +456,14 @@ class NeonSnakeGame {
         if (triggered) {
             this.cameraShake = Math.max(this.cameraShake, 0.35);
             this.updateHUD();
+        }
+    }
+
+    triggerPlayerPhaseMirage(snake) {
+        if (!snake || !snake.isAlive) return;
+        const triggered = snake.triggerPhaseMirage();
+        if (triggered) {
+            this.cameraShake = Math.max(this.cameraShake, 0.35);
         }
     }
 
@@ -1370,6 +1381,13 @@ class NeonSnakeGame {
         // Virtual Chrono Recall button
         // Virtual Tachyon Afterburner button
         const afterburnerTouchBtn = document.getElementById('touchAfterburner');
+        const glitchTouchBtn = document.getElementById('touchGlitch');
+        if (glitchTouchBtn) {
+            bindTouch('touchGlitch', () => {
+                this.triggerPlayerPhaseMirage(this.player1);
+            });
+        }
+
         const magnetTouchBtn = document.getElementById('touchMagnet');
         if (magnetTouchBtn) {
             bindTouch('touchMagnet', () => {
@@ -3864,6 +3882,13 @@ class NeonSnakeGame {
                 } else {
                     badges += `<span class="badge sonic" style="border-color:#f97316; color:#f97316; box-shadow:0 0 10px #f97316;">SONIC [5] READY</span>`;
                 }
+                if (this.player1.glitchShieldTimer > 0) {
+                    badges += `<span class="badge glitch" style="border-color:#ec4899; color:#ec4899; box-shadow:0 0 10px #ec4899;">MIRAGE (${Math.ceil(this.player1.glitchShieldTimer)}s)</span>`;
+                } else if (this.player1.glitchShieldCooldown > 0) {
+                    badges += `<span class="badge glitch" style="border-color:#ec4899; color:#ec4899;">GLITCH CD (${Math.ceil(this.player1.glitchShieldCooldown)}s)</span>`;
+                } else {
+                    badges += `<span class="badge glitch" style="border-color:#ec4899; color:#ec4899; box-shadow:0 0 10px #ec4899;">GLITCH [9] READY</span>`;
+                }
                 if (this.player1.magnetTimer > 0) {
                     badges += `<span class="badge magnet" style="border-color:#a855f7; color:#a855f7; box-shadow:0 0 10px #a855f7;">MAGNET (${Math.ceil(this.player1.magnetTimer)}s)</span>`;
                 } else if (this.player1.magnetCooldown > 0) {
@@ -3944,6 +3969,7 @@ class NeonSnakeGame {
             `TACHYON BURSTS : ${p?.tachyonAfterburnerCount || 0} IGNITIONS`,
             `AEGIS BARRIERS : ${p?.barricadeCount || 0} FORCEFIELDS`,
             `GRAVITON PULLS : ${p?.magnetCount || 0} SINGULARITIES`,
+            `PHASE MIRAGES  : ${p?.glitchCount || 0} DISPLACEMENTS`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,
