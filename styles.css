@@ -492,6 +492,13 @@ canvas {
     box-shadow: 0 0 10px rgba(255, 230, 0, 0.5);
 }
 
+.badge.sonic {
+    background: rgba(249, 115, 22, 0.25);
+    border: 1px solid #f97316;
+    color: #f97316;
+    box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+}
+
 .badge.cluster {
     background: rgba(192, 132, 252, 0.25);
     border: 1px solid #c084fc;
@@ -904,6 +911,18 @@ canvas {
 
 .touch-btn.strike-btn:active {
     background: #ffe600;
+    color: #000;
+}
+
+.touch-btn.sonic-btn {
+    border: 2px solid #fff;
+    background: #c2410c;
+    box-shadow: 4px 4px 0px #f97316, 0 0 14px #f97316;
+    color: #fff;
+}
+
+.touch-btn.sonic-btn:active {
+    background: #f97316;
     color: #000;
 }
 

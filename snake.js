@@ -98,6 +98,8 @@ class CyberSnake {
         this.chronoAnchorCount = 0;
         this.mineClusterCooldown = 0;
         this.mineClusterCount = 0;
+        this.sonicWaveCooldown = 0;
+        this.sonicWaveCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -537,6 +539,32 @@ class CyberSnake {
         }
 
         return cluster;
+    }
+
+    triggerSonicWave() {
+        if (this.sonicWaveCooldown > 0 || !this.isAlive || this.body.length === 0) return null;
+        this.sonicWaveCooldown = 9.0;
+        this.sonicWaveCount = (this.sonicWaveCount || 0) + 1;
+        this.score += 175;
+
+        const head = this.body[0];
+        if (window.cyberAudio) {
+            window.cyberAudio.playSonicConcussion();
+            if (this.id === 'player1') window.cyberAudio.announce('Sonic concussion wave emitted', true);
+        }
+
+        if (window.particleEngine) {
+            window.particleEngine.spawnSonicCone(head.pixelX, head.pixelY, this.dir);
+            window.particleEngine.addText('🔊 SONIC BLAST! +175', head.pixelX, head.pixelY - 24, '#f97316', 18);
+        }
+
+        return {
+            x: head.pixelX,
+            y: head.pixelY,
+            dir: { ...this.dir },
+            owner: this,
+            range: 120,
+            coneAngle: Math.PI * 0.45
         };
     }
 
@@ -678,6 +706,7 @@ class CyberSnake {
         if (this.orbitalStrikeCooldown > 0) this.orbitalStrikeCooldown -= dt;
         if (this.chronoAnchorCooldown > 0) this.chronoAnchorCooldown -= dt;
         if (this.mineClusterCooldown > 0) this.mineClusterCooldown -= dt;
+        if (this.sonicWaveCooldown > 0) this.sonicWaveCooldown -= dt;
         if (this.chronoAnchor) {
             this.chronoAnchor.life -= dt;
             this.chronoAnchor.pulse = (this.chronoAnchor.pulse + dt * 5) % (Math.PI * 2);

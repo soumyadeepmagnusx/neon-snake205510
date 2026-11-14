@@ -294,6 +294,11 @@ class NeonSnakeGame {
                 }
 
                 // Holographic Mirage Decoy (1)
+                // Sonic Concussion Wave (5)
+                if (e.code === 'Digit5' || e.code === 'Numpad5') {
+                    this.triggerPlayerSonicWave(this.player1);
+                }
+
                 // EMP Mine Cluster (4)
                 if (e.code === 'Digit4' || e.code === 'Numpad4') {
                     this.deployPlayerMineCluster(this.player1);
@@ -434,6 +439,88 @@ class NeonSnakeGame {
         const triggered = snake.triggerOrbitalSatellites();
         if (triggered) {
             this.cameraShake = Math.max(this.cameraShake, 0.35);
+            this.updateHUD();
+        }
+    }
+
+    triggerPlayerSonicWave(snake) {
+        if (!snake || !snake.isAlive || snake.body.length === 0) return;
+        const wave = snake.triggerSonicWave();
+        if (wave) {
+            this.cameraShake = Math.max(this.cameraShake, 0.45);
+            const hx = wave.x;
+            const hy = wave.y;
+            const dirX = wave.dir.x;
+            const dirY = wave.dir.y;
+            const coneAngle = wave.coneAngle;
+            const baseAngle = Math.atan2(dirY, dirX);
+            const range = wave.range;
+
+            // 1. Deflect/reverse hostile projectiles in cone
+            for (let i = this.projectiles.length - 1; i >= 0; i--) {
+                const p = this.projectiles[i];
+                if (p.owner === snake) continue;
+                const dist = Math.hypot(p.x - hx, p.y - hy);
+                if (dist <= range) {
+                    const angleToP = Math.atan2(p.y - hy, p.x - hx);
+                    let diff = Math.abs(angleToP - baseAngle);
+                    while (diff > Math.PI) diff = Math.abs(diff - Math.PI * 2);
+                    if (diff <= coneAngle) {
+                        p.vx = -p.vx * 1.3;
+                        p.vy = -p.vy * 1.3;
+                        p.owner = snake;
+                        p.color = '#f97316';
+                        if (window.particleEngine) {
+                            window.particleEngine.addText('DEFLECTED!', p.x, p.y - 12, '#f97316', 14);
+                        }
+                    }
+                }
+            }
+
+            // 2. Knockback and stun enemy snakes in cone
+            for (const other of this.snakes) {
+                if (!other.isAlive || other === snake || other.body.length === 0) continue;
+                const ox = other.body[0].pixelX;
+                const oy = other.body[0].pixelY;
+                const dist = Math.hypot(ox - hx, oy - hy);
+                if (dist <= range) {
+                    const angleToOther = Math.atan2(oy - hy, ox - hx);
+                    let diff = Math.abs(angleToOther - baseAngle);
+                    while (diff > Math.PI) diff = Math.abs(diff - Math.PI * 2);
+                    if (diff <= coneAngle) {
+                        other.takeDamage(35);
+                        other.moveTimer = -0.8;
+                        const pushGridX = (other.gridX + dirX * 2 + this.gridWidth) % this.gridWidth;
+                        const pushGridY = (other.gridY + dirY * 2 + this.gridHeight) % this.gridHeight;
+                        other.gridX = pushGridX;
+                        other.gridY = pushGridY;
+                        if (window.particleEngine) {
+                            window.particleEngine.addText('🔊 CONCUSSION! -35HP', ox, oy - 22, '#f97316', 16);
+                        }
+                    }
+                }
+            }
+
+            // 3. Shatter obstacles in cone
+            this.obstacles = this.obstacles.filter(obs => {
+                const ox = obs.x * this.cellSize + this.cellSize / 2;
+                const oy = obs.y * this.cellSize + this.cellSize / 2;
+                const dist = Math.hypot(ox - hx, oy - hy);
+                if (dist <= range) {
+                    const angleToObs = Math.atan2(oy - hy, ox - hx);
+                    let diff = Math.abs(angleToObs - baseAngle);
+                    while (diff > Math.PI) diff = Math.abs(diff - Math.PI * 2);
+                    if (diff <= coneAngle) {
+                        if (window.particleEngine) {
+                            window.particleEngine.spawnBurst(ox, oy, '#f97316', 10, 3);
+                        }
+                        if (snake === this.player1) this.score += 25;
+                        return false;
+                    }
+                }
+                return true;
+            });
+
             this.updateHUD();
         }
     }
@@ -1150,6 +1237,14 @@ class NeonSnakeGame {
         // Virtual Holographic Decoy button
         // Virtual Ionized Orbital Strike button
         // Virtual Chrono Recall button
+        // Virtual Sonic Concussion button
+        const sonicTouchBtn = document.getElementById('touchSonic');
+        if (sonicTouchBtn) {
+            bindTouch('touchSonic', () => {
+                this.triggerPlayerSonicWave(this.player1);
+            });
+        }
+
         // Virtual EMP Cluster button
         const clusterTouchBtn = document.getElementById('touchCluster');
         if (clusterTouchBtn) {
@@ -3491,6 +3586,11 @@ class NeonSnakeGame {
                 } else {
                     badges += `<span class="badge cluster" style="border-color:#c084fc; color:#c084fc; box-shadow:0 0 10px #c084fc;">CLUSTER [4] READY</span>`;
                 }
+                if (this.player1.sonicWaveCooldown > 0) {
+                    badges += `<span class="badge sonic" style="border-color:#f97316; color:#f97316;">SONIC CD (${Math.ceil(this.player1.sonicWaveCooldown)}s)</span>`;
+                } else {
+                    badges += `<span class="badge sonic" style="border-color:#f97316; color:#f97316; box-shadow:0 0 10px #f97316;">SONIC [5] READY</span>`;
+                }
                 if (this.player1.orbitalSatellitesActive) {
                     badges += `<span class="badge satellite" style="border-color:#38bdf8; color:#38bdf8; box-shadow:0 0 10px #38bdf8;">ORBITAL SATELLITES (${Math.ceil(this.player1.orbitalSatellitesTimer)}s)</span>`;
                 }
@@ -3548,6 +3648,7 @@ class NeonSnakeGame {
             `ORBITAL STRIKES: ${p?.orbitalStrikeCount || 0} BOMBARDMENTS`,
             `CHRONO RECALLS : ${p?.chronoAnchorCount || 0} QUANTUM REWINDS`,
             `EMP CLUSTERS   : ${p?.mineClusterCount || 0} TRI-DETONATIONS`,
+            `SONIC BLASTS   : ${p?.sonicWaveCount || 0} CONCUSSION WAVES`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,

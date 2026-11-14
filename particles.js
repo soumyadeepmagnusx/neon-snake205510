@@ -523,6 +523,28 @@ class ParticleEngine {
         }
     }
 
+    spawnSonicCone(x, y, dir) {
+        this.shockwaves.push(new Shockwave(x, y, '#f97316', 130, 0.4));
+        this.shockwaves.push(new Shockwave(x, y, '#ffffff', 80, 0.25));
+
+        const baseAngle = Math.atan2(dir.y, dir.x);
+        for (let i = 0; i < 30; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const spread = (Math.random() - 0.5) * Math.PI * 0.45;
+            const angle = baseAngle + spread;
+            const speed = Math.random() * 8 + 4;
+            this.particles.push(new Particle(
+                x, y,
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed,
+                i % 2 === 0 ? '#f97316' : '#ffffff',
+                Math.random() * 3 + 2,
+                0.45,
+                'spark'
+            ));
+        }
+    }
+
     spawnClusterShockwaves(x, y) {
         this.shockwaves.push(new Shockwave(x, y, '#c084fc', 110, 0.45));
         this.shockwaves.push(new Shockwave(x, y, '#ffffff', 65, 0.25));
