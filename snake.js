@@ -100,6 +100,9 @@ class CyberSnake {
         this.mineClusterCount = 0;
         this.sonicWaveCooldown = 0;
         this.sonicWaveCount = 0;
+        this.tachyonAfterburnerTimer = 0;
+        this.tachyonAfterburnerCooldown = 0;
+        this.tachyonAfterburnerCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -568,6 +571,28 @@ class CyberSnake {
         };
     }
 
+    triggerTachyonAfterburner() {
+        if (this.tachyonAfterburnerCooldown > 0 || !this.isAlive || this.body.length === 0) return false;
+        this.tachyonAfterburnerTimer = 3.5;
+        this.tachyonAfterburnerCooldown = 11.0;
+        this.tachyonAfterburnerCount = (this.tachyonAfterburnerCount || 0) + 1;
+        this.score += 180;
+        this.boostEnergy = Math.min(100, this.boostEnergy + 50);
+
+        const head = this.body[0];
+        if (window.cyberAudio) {
+            window.cyberAudio.playTachyonAfterburner();
+            if (this.id === 'player1') window.cyberAudio.announce('Tachyon afterburner ignited', true);
+        }
+
+        if (window.particleEngine) {
+            window.particleEngine.spawnTachyonIgnition(head.pixelX, head.pixelY);
+            window.particleEngine.addText('🔥 TACHYON IGNITION! +180', head.pixelX, head.pixelY - 24, '#ef4444', 18);
+        }
+
+        return true;
+    }
+
     shootPlasma() {
         if (this.ammo <= 0 || this.ammoCooldown > 0 || !this.isAlive) return null;
         this.ammo--;
@@ -707,6 +732,8 @@ class CyberSnake {
         if (this.chronoAnchorCooldown > 0) this.chronoAnchorCooldown -= dt;
         if (this.mineClusterCooldown > 0) this.mineClusterCooldown -= dt;
         if (this.sonicWaveCooldown > 0) this.sonicWaveCooldown -= dt;
+        if (this.tachyonAfterburnerTimer > 0) this.tachyonAfterburnerTimer -= dt;
+        if (this.tachyonAfterburnerCooldown > 0) this.tachyonAfterburnerCooldown -= dt;
         if (this.chronoAnchor) {
             this.chronoAnchor.life -= dt;
             this.chronoAnchor.pulse = (this.chronoAnchor.pulse + dt * 5) % (Math.PI * 2);
@@ -768,6 +795,7 @@ class CyberSnake {
         let speedMultiplier = 1.0;
         if (this.isBoosting) speedMultiplier = 2.1;
         if (this.isDrifting) speedMultiplier = 0.45; // Tactical Cyber Brake / Drift
+        if (this.tachyonAfterburnerTimer > 0) speedMultiplier = 2.6;
         const currentInterval = this.baseMoveInterval / speedMultiplier;
 
         this.moveTimer += dt;

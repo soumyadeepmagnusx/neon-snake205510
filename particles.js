@@ -523,6 +523,25 @@ class ParticleEngine {
         }
     }
 
+    spawnTachyonIgnition(x, y) {
+        this.shockwaves.push(new Shockwave(x, y, '#ef4444', 120, 0.4));
+        this.shockwaves.push(new Shockwave(x, y, '#ffedd5', 70, 0.25));
+        for (let i = 0; i < 28; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const a = (i * Math.PI * 2) / 28;
+            const spd = Math.random() * 6 + 3;
+            this.particles.push(new Particle(
+                x, y,
+                Math.cos(a) * spd,
+                Math.sin(a) * spd,
+                i % 2 === 0 ? '#ef4444' : '#f97316',
+                Math.random() * 3 + 2,
+                0.45,
+                'spark'
+            ));
+        }
+    }
+
     spawnSonicCone(x, y, dir) {
         this.shockwaves.push(new Shockwave(x, y, '#f97316', 130, 0.4));
         this.shockwaves.push(new Shockwave(x, y, '#ffffff', 80, 0.25));

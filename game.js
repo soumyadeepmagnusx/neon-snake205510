@@ -37,6 +37,7 @@ class NeonSnakeGame {
         this.projectiles = [];
         this.decoys = [];
         this.orbitalStrikes = [];
+        this.thermalTrails = [];
 
         // Laser Sweep Arena Hazard
         this.laserSweepTimer = 0;
@@ -294,6 +295,11 @@ class NeonSnakeGame {
                 }
 
                 // Holographic Mirage Decoy (1)
+                // Tachyon Afterburner (6)
+                if (e.code === 'Digit6' || e.code === 'Numpad6') {
+                    this.triggerPlayerTachyonAfterburner(this.player1);
+                }
+
                 // Sonic Concussion Wave (5)
                 if (e.code === 'Digit5' || e.code === 'Numpad5') {
                     this.triggerPlayerSonicWave(this.player1);
@@ -439,6 +445,15 @@ class NeonSnakeGame {
         const triggered = snake.triggerOrbitalSatellites();
         if (triggered) {
             this.cameraShake = Math.max(this.cameraShake, 0.35);
+            this.updateHUD();
+        }
+    }
+
+    triggerPlayerTachyonAfterburner(snake) {
+        if (!snake || !snake.isAlive) return;
+        const triggered = snake.triggerTachyonAfterburner();
+        if (triggered) {
+            this.cameraShake = Math.max(this.cameraShake, 0.4);
             this.updateHUD();
         }
     }
@@ -1237,6 +1252,14 @@ class NeonSnakeGame {
         // Virtual Holographic Decoy button
         // Virtual Ionized Orbital Strike button
         // Virtual Chrono Recall button
+        // Virtual Tachyon Afterburner button
+        const afterburnerTouchBtn = document.getElementById('touchAfterburner');
+        if (afterburnerTouchBtn) {
+            bindTouch('touchAfterburner', () => {
+                this.triggerPlayerTachyonAfterburner(this.player1);
+            });
+        }
+
         // Virtual Sonic Concussion button
         const sonicTouchBtn = document.getElementById('touchSonic');
         if (sonicTouchBtn) {
@@ -1324,6 +1347,7 @@ class NeonSnakeGame {
         this.projectiles = [];
         this.decoys = [];
         this.orbitalStrikes = [];
+        this.thermalTrails = [];
         this.mines = [];
         this.portals = [];
         this.replayBuffer = [];
@@ -1736,6 +1760,61 @@ class NeonSnakeGame {
                     break;
                 }
             }
+        }
+    }
+
+    updateThermalTrails(dt) {
+        for (let i = this.thermalTrails.length - 1; i >= 0; i--) {
+            const trail = this.thermalTrails[i];
+            trail.life -= dt;
+            if (trail.life <= 0) {
+                this.thermalTrails.splice(i, 1);
+                continue;
+            }
+
+            for (const other of this.snakes) {
+                if (!other.isAlive || other === trail.owner || other.body.length === 0) continue;
+                if (Math.hypot(other.body[0].pixelX - trail.pixelX, other.body[0].pixelY - trail.pixelY) < this.cellSize * 1.1) {
+                    other.takeDamage(15 * dt);
+                    if (window.particleEngine && Math.random() < 0.12) {
+                        window.particleEngine.addText('🔥 -15HP', other.body[0].pixelX, other.body[0].pixelY - 20, '#ef4444', 12);
+                    }
+                }
+            }
+
+            this.obstacles = this.obstacles.filter(obs => {
+                const ox = obs.x * this.cellSize + this.cellSize / 2;
+                const oy = obs.y * this.cellSize + this.cellSize / 2;
+                if (Math.hypot(ox - trail.pixelX, oy - trail.pixelY) < this.cellSize * 0.9) {
+                    if (window.particleEngine) {
+                        window.particleEngine.spawnBurst(ox, oy, '#ef4444', 8, 3);
+                    }
+                    if (trail.owner) trail.owner.score += 20;
+                    return false;
+                }
+                return true;
+            });
+        }
+    }
+
+    drawThermalTrails(ctx) {
+        for (const trail of this.thermalTrails) {
+            ctx.save();
+            const alpha = Math.max(0.1, trail.life / trail.maxLife);
+            ctx.globalAlpha = alpha;
+            ctx.translate(trail.pixelX, trail.pixelY);
+            ctx.shadowBlur = 14;
+            ctx.shadowColor = '#ef4444';
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(0, 0, (this.cellSize * 0.45) * alpha, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffedd5';
+            ctx.beginPath();
+            ctx.arc(0, 0, (this.cellSize * 0.2) * alpha, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
         }
     }
 
@@ -2600,6 +2679,24 @@ class NeonSnakeGame {
         this.updateDecoys(dt);
         this.updateOrbitalStrikes(dt);
 
+        for (const s of this.snakes) {
+            if (s.isAlive && s.tachyonAfterburnerTimer > 0 && s.body.length > 0) {
+                const head = s.body[0];
+                if (Math.random() < 0.6) {
+                    this.thermalTrails.push({
+                        gridX: head.x,
+                        gridY: head.y,
+                        pixelX: head.pixelX,
+                        pixelY: head.pixelY,
+                        owner: s,
+                        life: 3.5,
+                        maxLife: 3.5
+                    });
+                }
+            }
+        }
+        this.updateThermalTrails(dt);
+
         // Record Replay Frame for VCR Fatal Replay
         if (this.isRunning && !this.gameOver && this.player1 && this.player1.isAlive) {
             this.recordReplayFrame();
@@ -2718,6 +2815,7 @@ class NeonSnakeGame {
         this.drawDecoys(ctx);
         this.drawOrbitalStrikes(ctx);
         this.drawChronoAnchor(ctx);
+        this.drawThermalTrails(ctx);
 
         // 9. Draw Foods & Powerups
         this.drawFoods(ctx);
@@ -3591,6 +3689,13 @@ class NeonSnakeGame {
                 } else {
                     badges += `<span class="badge sonic" style="border-color:#f97316; color:#f97316; box-shadow:0 0 10px #f97316;">SONIC [5] READY</span>`;
                 }
+                if (this.player1.tachyonAfterburnerTimer > 0) {
+                    badges += `<span class="badge tachyon" style="border-color:#ef4444; color:#ef4444; box-shadow:0 0 10px #ef4444;">TACHYON (${Math.ceil(this.player1.tachyonAfterburnerTimer)}s)</span>`;
+                } else if (this.player1.tachyonAfterburnerCooldown > 0) {
+                    badges += `<span class="badge tachyon" style="border-color:#ef4444; color:#ef4444;">IGNITE CD (${Math.ceil(this.player1.tachyonAfterburnerCooldown)}s)</span>`;
+                } else {
+                    badges += `<span class="badge tachyon" style="border-color:#ef4444; color:#ef4444; box-shadow:0 0 10px #ef4444;">IGNITE [6] READY</span>`;
+                }
                 if (this.player1.orbitalSatellitesActive) {
                     badges += `<span class="badge satellite" style="border-color:#38bdf8; color:#38bdf8; box-shadow:0 0 10px #38bdf8;">ORBITAL SATELLITES (${Math.ceil(this.player1.orbitalSatellitesTimer)}s)</span>`;
                 }
@@ -3649,6 +3754,7 @@ class NeonSnakeGame {
             `CHRONO RECALLS : ${p?.chronoAnchorCount || 0} QUANTUM REWINDS`,
             `EMP CLUSTERS   : ${p?.mineClusterCount || 0} TRI-DETONATIONS`,
             `SONIC BLASTS   : ${p?.sonicWaveCount || 0} CONCUSSION WAVES`,
+            `TACHYON BURSTS : ${p?.tachyonAfterburnerCount || 0} IGNITIONS`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,

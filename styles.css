@@ -492,6 +492,13 @@ canvas {
     box-shadow: 0 0 10px rgba(255, 230, 0, 0.5);
 }
 
+.badge.tachyon {
+    background: rgba(239, 68, 68, 0.25);
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
 .badge.sonic {
     background: rgba(249, 115, 22, 0.25);
     border: 1px solid #f97316;
@@ -911,6 +918,18 @@ canvas {
 
 .touch-btn.strike-btn:active {
     background: #ffe600;
+    color: #000;
+}
+
+.touch-btn.afterburner-btn {
+    border: 2px solid #fff;
+    background: #b91c1c;
+    box-shadow: 4px 4px 0px #ef4444, 0 0 14px #ef4444;
+    color: #fff;
+}
+
+.touch-btn.afterburner-btn:active {
+    background: #ef4444;
     color: #000;
 }
 
