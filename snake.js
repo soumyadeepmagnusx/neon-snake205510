@@ -105,6 +105,9 @@ class CyberSnake {
         this.tachyonAfterburnerCount = 0;
         this.barricadeCooldown = 0;
         this.barricadeCount = 0;
+        this.magnetTimer = 0;
+        this.magnetCooldown = 0;
+        this.magnetCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -595,6 +598,27 @@ class CyberSnake {
         return true;
     }
 
+    triggerMagnetoCollector() {
+        if (this.magnetCooldown > 0 || !this.isAlive || this.body.length === 0) return false;
+        this.magnetTimer = 6.0;
+        this.magnetCooldown = 13.0;
+        this.magnetCount = (this.magnetCount || 0) + 1;
+        this.score += 200;
+
+        const head = this.body[0];
+        if (window.cyberAudio) {
+            window.cyberAudio.playMagnetoPulse();
+            if (this.id === 'player1') window.cyberAudio.announce('Graviton vacuum engaged', true);
+        }
+
+        if (window.particleEngine) {
+            window.particleEngine.spawnMagnetoFlux(head.pixelX, head.pixelY);
+            window.particleEngine.addText('🧲 GRAVITON SINGULARITY! +200', head.pixelX, head.pixelY - 24, '#a855f7', 18);
+        }
+
+        return true;
+    }
+
     triggerAegisBarricade(game) {
         if (this.barricadeCooldown > 0 || !this.isAlive || this.body.length === 0) return null;
         this.barricadeCooldown = 12.0;
@@ -776,6 +800,8 @@ class CyberSnake {
         if (this.tachyonAfterburnerTimer > 0) this.tachyonAfterburnerTimer -= dt;
         if (this.tachyonAfterburnerCooldown > 0) this.tachyonAfterburnerCooldown -= dt;
         if (this.barricadeCooldown > 0) this.barricadeCooldown -= dt;
+        if (this.magnetTimer > 0) this.magnetTimer -= dt;
+        if (this.magnetCooldown > 0) this.magnetCooldown -= dt;
         if (this.chronoAnchor) {
             this.chronoAnchor.life -= dt;
             this.chronoAnchor.pulse = (this.chronoAnchor.pulse + dt * 5) % (Math.PI * 2);

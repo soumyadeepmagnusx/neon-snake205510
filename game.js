@@ -297,6 +297,9 @@ class NeonSnakeGame {
 
                 // Holographic Mirage Decoy (1)
                 // Tachyon Afterburner (6)
+                if (e.code === 'Digit8' || e.code === 'Numpad8') {
+                    this.triggerPlayerMagnetoCollector(this.player1);
+                }
                 if (e.code === 'Digit7' || e.code === 'Numpad7') {
                     this.triggerPlayerAegisBarricade(this.player1);
                 }
@@ -450,6 +453,14 @@ class NeonSnakeGame {
         if (triggered) {
             this.cameraShake = Math.max(this.cameraShake, 0.35);
             this.updateHUD();
+        }
+    }
+
+    triggerPlayerMagnetoCollector(snake) {
+        if (!snake || !snake.isAlive) return;
+        const triggered = snake.triggerMagnetoCollector();
+        if (triggered) {
+            this.cameraShake = Math.max(this.cameraShake, 0.3);
         }
     }
 
@@ -1359,6 +1370,13 @@ class NeonSnakeGame {
         // Virtual Chrono Recall button
         // Virtual Tachyon Afterburner button
         const afterburnerTouchBtn = document.getElementById('touchAfterburner');
+        const magnetTouchBtn = document.getElementById('touchMagnet');
+        if (magnetTouchBtn) {
+            bindTouch('touchMagnet', () => {
+                this.triggerPlayerMagnetoCollector(this.player1);
+            });
+        }
+
         const barricadeTouchBtn = document.getElementById('touchBarricade');
         if (barricadeTouchBtn) {
             bindTouch('touchBarricade', () => {
@@ -2830,6 +2848,28 @@ class NeonSnakeGame {
         }
         this.updateThermalTrails(dt);
         this.updateBarricades(dt);
+        // Singularity Magneto Graviton Collector Vacuum Loop
+        for (const s of this.snakes) {
+            if (!s.isAlive || s.magnetTimer <= 0 || s.body.length === 0) continue;
+            const head = s.body[0];
+            for (const food of this.foods) {
+                const fx = food.x * this.cellSize + this.cellSize / 2;
+                const fy = food.y * this.cellSize + this.cellSize / 2;
+                const dist = Math.hypot(head.pixelX - fx, head.pixelY - fy);
+                if (dist < this.cellSize * 12 && dist > this.cellSize * 0.4) {
+                    const step = (this.cellSize * 5.5 * dt);
+                    const angle = Math.atan2(head.pixelY - fy, head.pixelX - fx);
+                    const newFx = fx + Math.cos(angle) * step;
+                    const newFy = fy + Math.sin(angle) * step;
+                    food.x = Math.max(0, Math.min(this.cols - 1, Math.floor(newFx / this.cellSize)));
+                    food.y = Math.max(0, Math.min(this.rows - 1, Math.floor(newFy / this.cellSize)));
+                    if (window.particleEngine && Math.random() < 0.15) {
+                        window.particleEngine.spawnTrailSparks(fx, fy, '#c084fc', 1);
+                    }
+                }
+            }
+        }
+
 
         // Record Replay Frame for VCR Fatal Replay
         if (this.isRunning && !this.gameOver && this.player1 && this.player1.isAlive) {
@@ -3824,6 +3864,13 @@ class NeonSnakeGame {
                 } else {
                     badges += `<span class="badge sonic" style="border-color:#f97316; color:#f97316; box-shadow:0 0 10px #f97316;">SONIC [5] READY</span>`;
                 }
+                if (this.player1.magnetTimer > 0) {
+                    badges += `<span class="badge magnet" style="border-color:#a855f7; color:#a855f7; box-shadow:0 0 10px #a855f7;">MAGNET (${Math.ceil(this.player1.magnetTimer)}s)</span>`;
+                } else if (this.player1.magnetCooldown > 0) {
+                    badges += `<span class="badge magnet" style="border-color:#a855f7; color:#a855f7;">MAGNET CD (${Math.ceil(this.player1.magnetCooldown)}s)</span>`;
+                } else {
+                    badges += `<span class="badge magnet" style="border-color:#a855f7; color:#a855f7; box-shadow:0 0 10px #a855f7;">MAGNET [8] READY</span>`;
+                }
                 if (this.player1.barricadeCooldown > 0) {
                     badges += `<span class="badge aegis" style="border-color:#06b6d4; color:#06b6d4;">AEGIS CD (${Math.ceil(this.player1.barricadeCooldown)}s)</span>`;
                 } else {
@@ -3896,6 +3943,7 @@ class NeonSnakeGame {
             `SONIC BLASTS   : ${p?.sonicWaveCount || 0} CONCUSSION WAVES`,
             `TACHYON BURSTS : ${p?.tachyonAfterburnerCount || 0} IGNITIONS`,
             `AEGIS BARRIERS : ${p?.barricadeCount || 0} FORCEFIELDS`,
+            `GRAVITON PULLS : ${p?.magnetCount || 0} SINGULARITIES`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,

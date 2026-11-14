@@ -1074,3 +1074,22 @@ canvas {
     background: #06b6d4;
     color: #000;
 }
+
+.badge.magnet {
+    background: rgba(168, 85, 247, 0.25);
+    border: 1px solid #a855f7;
+    color: #a855f7;
+    box-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
+}
+
+.touch-btn.magnet-btn {
+    border: 2px solid #fff;
+    background: #7e22ce;
+    box-shadow: 4px 4px 0px #a855f7, 0 0 14px #a855f7;
+    color: #fff;
+}
+
+.touch-btn.magnet-btn:active {
+    background: #a855f7;
+    color: #000;
+}

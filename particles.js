@@ -523,6 +523,26 @@ class ParticleEngine {
         }
     }
 
+    spawnMagnetoFlux(x, y) {
+        this.shockwaves.push(new Shockwave(x, y, '#a855f7', 140, 0.5));
+        for (let i = 0; i < 24; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const a = Math.random() * Math.PI * 2;
+            const dist = Math.random() * 80 + 40;
+            const px = x + Math.cos(a) * dist;
+            const py = y + Math.sin(a) * dist;
+            const vx = -Math.cos(a) * (Math.random() * 4 + 3);
+            const vy = -Math.sin(a) * (Math.random() * 4 + 3);
+            this.particles.push(new Particle(
+                px, py, vx, vy,
+                i % 2 === 0 ? '#a855f7' : '#c084fc',
+                Math.random() * 3 + 2,
+                0.4,
+                'spark'
+            ));
+        }
+    }
+
     spawnAegisDeploy(x, y) {
         this.shockwaves.push(new Shockwave(x, y, '#06b6d4', 90, 0.4));
         for (let i = 0; i < 20; i++) {
