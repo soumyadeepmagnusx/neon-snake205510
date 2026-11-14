@@ -38,6 +38,7 @@ class NeonSnakeGame {
         this.decoys = [];
         this.orbitalStrikes = [];
         this.thermalTrails = [];
+        this.barricades = [];
 
         // Laser Sweep Arena Hazard
         this.laserSweepTimer = 0;
@@ -296,6 +297,9 @@ class NeonSnakeGame {
 
                 // Holographic Mirage Decoy (1)
                 // Tachyon Afterburner (6)
+                if (e.code === 'Digit7' || e.code === 'Numpad7') {
+                    this.triggerPlayerAegisBarricade(this.player1);
+                }
                 if (e.code === 'Digit6' || e.code === 'Numpad6') {
                     this.triggerPlayerTachyonAfterburner(this.player1);
                 }
@@ -446,6 +450,107 @@ class NeonSnakeGame {
         if (triggered) {
             this.cameraShake = Math.max(this.cameraShake, 0.35);
             this.updateHUD();
+        }
+    }
+
+    triggerPlayerAegisBarricade(snake) {
+        if (!snake || !snake.isAlive) return;
+        const nodes = snake.triggerAegisBarricade(this);
+        if (nodes && nodes.length > 0) {
+            for (const node of nodes) {
+                this.barricades.push({
+                    gridX: node.x,
+                    gridY: node.y,
+                    pixelX: node.x * this.cellSize + this.cellSize / 2,
+                    pixelY: node.y * this.cellSize + this.cellSize / 2,
+                    hp: 3,
+                    maxHp: 3,
+                    life: 12.0,
+                    maxLife: 12.0,
+                    pulse: Math.random() * Math.PI * 2,
+                    owner: snake
+                });
+            }
+            this.cameraShake = Math.max(this.cameraShake, 0.35);
+        }
+    }
+
+    updateBarricades(dt) {
+        for (let i = this.barricades.length - 1; i >= 0; i--) {
+            const b = this.barricades[i];
+            b.life -= dt;
+            b.pulse = (b.pulse + dt * 4) % (Math.PI * 2);
+            if (b.life <= 0 || b.hp <= 0) {
+                if (window.particleEngine) {
+                    window.particleEngine.spawnBurst(b.pixelX, b.pixelY, '#06b6d4', 16, 5);
+                    window.particleEngine.addText('BARRIER DISSIPATED', b.pixelX, b.pixelY - 12, '#06b6d4', 11);
+                }
+                if (b.owner) b.owner.score += 50;
+                this.barricades.splice(i, 1);
+                continue;
+            }
+
+            // Repel and damage enemy snakes attempting to breach
+            for (const s of this.snakes) {
+                if (!s.isAlive || s.body.length === 0 || s === b.owner) continue;
+                const head = s.body[0];
+                if (head.x === b.gridX && head.y === b.gridY) {
+                    s.takeDamage(20);
+                    b.hp--;
+                    if (window.cyberAudio) window.cyberAudio.playBarricadeDeflect();
+                    if (window.particleEngine) {
+                        window.particleEngine.spawnBarricadeDeflect(b.pixelX, b.pixelY);
+                        window.particleEngine.addText('🛡️ RECOIL! -20HP', b.pixelX, b.pixelY - 20, '#06b6d4', 14);
+                    }
+                    s.dir = { x: -s.dir.x, y: -s.dir.y };
+                }
+            }
+        }
+    }
+
+    drawBarricades(ctx) {
+        for (const b of this.barricades) {
+            ctx.save();
+            ctx.translate(b.pixelX, b.pixelY);
+            const alpha = Math.min(1.0, b.life / 2.0);
+            ctx.globalAlpha = 0.88 * alpha;
+
+            const size = this.cellSize * 0.48;
+            ctx.shadowBlur = 14;
+            ctx.shadowColor = '#06b6d4';
+            ctx.strokeStyle = '#06b6d4';
+            ctx.lineWidth = 2.5;
+            ctx.fillStyle = 'rgba(6, 182, 212, 0.22)';
+
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI / 3) * i + b.pulse * 0.4;
+                const px = Math.cos(angle) * size;
+                const py = Math.sin(angle) * size;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Core emitter
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(0, 0, 3 + Math.sin(b.pulse) * 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // HP pips
+            for (let h = 0; h < b.hp; h++) {
+                const hx = -8 + h * 8;
+                ctx.fillStyle = '#67e8f9';
+                ctx.beginPath();
+                ctx.arc(hx, size * 0.65, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
         }
     }
 
@@ -1254,6 +1359,13 @@ class NeonSnakeGame {
         // Virtual Chrono Recall button
         // Virtual Tachyon Afterburner button
         const afterburnerTouchBtn = document.getElementById('touchAfterburner');
+        const barricadeTouchBtn = document.getElementById('touchBarricade');
+        if (barricadeTouchBtn) {
+            bindTouch('touchBarricade', () => {
+                this.triggerPlayerAegisBarricade(this.player1);
+            });
+        }
+
         if (afterburnerTouchBtn) {
             bindTouch('touchAfterburner', () => {
                 this.triggerPlayerTachyonAfterburner(this.player1);
@@ -2277,6 +2389,27 @@ class NeonSnakeGame {
             }
             if (interceptedBySatellite) continue;
 
+            // Aegis Kinetic Barricade Projectile Absorption Check
+            let interceptedByBarricade = false;
+            for (const b of this.barricades) {
+                if (b.owner === p.owner) continue;
+                const distToBarricade = Math.hypot(p.x - b.pixelX, p.y - b.pixelY);
+                if (distToBarricade <= this.cellSize * 0.95) {
+                    interceptedByBarricade = true;
+                    b.hp--;
+                    if (window.particleEngine) {
+                        window.particleEngine.spawnBarricadeDeflect(b.pixelX, b.pixelY);
+                        window.particleEngine.addText('🛡️ ABSORB! +40', b.pixelX, b.pixelY - 18, '#06b6d4', 15);
+                    }
+                    if (window.cyberAudio) window.cyberAudio.playBarricadeDeflect();
+                    if (b.owner) b.owner.score += 40;
+                    this.projectiles.splice(i, 1);
+                    break;
+                }
+            }
+            if (interceptedByBarricade) continue;
+
+
             const gridX = Math.floor(p.x / this.cellSize);
             const gridY = Math.floor(p.y / this.cellSize);
 
@@ -2696,6 +2829,7 @@ class NeonSnakeGame {
             }
         }
         this.updateThermalTrails(dt);
+        this.updateBarricades(dt);
 
         // Record Replay Frame for VCR Fatal Replay
         if (this.isRunning && !this.gameOver && this.player1 && this.player1.isAlive) {
@@ -2816,6 +2950,7 @@ class NeonSnakeGame {
         this.drawOrbitalStrikes(ctx);
         this.drawChronoAnchor(ctx);
         this.drawThermalTrails(ctx);
+        this.drawBarricades(ctx);
 
         // 9. Draw Foods & Powerups
         this.drawFoods(ctx);
@@ -3689,6 +3824,11 @@ class NeonSnakeGame {
                 } else {
                     badges += `<span class="badge sonic" style="border-color:#f97316; color:#f97316; box-shadow:0 0 10px #f97316;">SONIC [5] READY</span>`;
                 }
+                if (this.player1.barricadeCooldown > 0) {
+                    badges += `<span class="badge aegis" style="border-color:#06b6d4; color:#06b6d4;">AEGIS CD (${Math.ceil(this.player1.barricadeCooldown)}s)</span>`;
+                } else {
+                    badges += `<span class="badge aegis" style="border-color:#06b6d4; color:#06b6d4; box-shadow:0 0 10px #06b6d4;">AEGIS [7] READY</span>`;
+                }
                 if (this.player1.tachyonAfterburnerTimer > 0) {
                     badges += `<span class="badge tachyon" style="border-color:#ef4444; color:#ef4444; box-shadow:0 0 10px #ef4444;">TACHYON (${Math.ceil(this.player1.tachyonAfterburnerTimer)}s)</span>`;
                 } else if (this.player1.tachyonAfterburnerCooldown > 0) {
@@ -3755,6 +3895,7 @@ class NeonSnakeGame {
             `EMP CLUSTERS   : ${p?.mineClusterCount || 0} TRI-DETONATIONS`,
             `SONIC BLASTS   : ${p?.sonicWaveCount || 0} CONCUSSION WAVES`,
             `TACHYON BURSTS : ${p?.tachyonAfterburnerCount || 0} IGNITIONS`,
+            `AEGIS BARRIERS : ${p?.barricadeCount || 0} FORCEFIELDS`,
             `COMBAT STATUS  : ${this.bossSnake && !this.bossSnake.isAlive ? 'CYBER LEVIATHAN SLAIN' : 'MISSION TERMINATED'}`,
             `=========================================`,
             `GRID PROTOCOL: VERIFIED & LOGGED`,

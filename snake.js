@@ -103,6 +103,8 @@ class CyberSnake {
         this.tachyonAfterburnerTimer = 0;
         this.tachyonAfterburnerCooldown = 0;
         this.tachyonAfterburnerCount = 0;
+        this.barricadeCooldown = 0;
+        this.barricadeCount = 0;
         this.overclockEnergy = 100; // 0 - 100%
         this.isOverclocked = false;
 
@@ -593,6 +595,45 @@ class CyberSnake {
         return true;
     }
 
+    triggerAegisBarricade(game) {
+        if (this.barricadeCooldown > 0 || !this.isAlive || this.body.length === 0) return null;
+        this.barricadeCooldown = 12.0;
+        this.barricadeCount = (this.barricadeCount || 0) + 1;
+        this.score += 190;
+
+        const tail = this.body[this.body.length - 1];
+        const prev = this.body.length > 1 ? this.body[this.body.length - 2] : null;
+        let dx = prev ? tail.x - prev.x : -this.dir.x;
+        let dy = prev ? tail.y - prev.y : -this.dir.y;
+        if (dx === 0 && dy === 0) { dx = -this.dir.x; dy = -this.dir.y; }
+
+        const perpX = -dy;
+        const perpY = dx;
+        const cols = game ? game.cols : 40;
+        const rows = game ? game.rows : 30;
+        const wrap = (val, max) => ((val % max) + max) % max;
+
+        const nodes = [
+            { x: wrap(tail.x + dx, cols), y: wrap(tail.y + dy, rows) },
+            { x: wrap(tail.x + dx + perpX, cols), y: wrap(tail.y + dy + perpY, rows) },
+            { x: wrap(tail.x + dx - perpX, cols), y: wrap(tail.y + dy - perpY, rows) }
+        ];
+
+        if (window.cyberAudio) {
+            window.cyberAudio.playAegisBarricade();
+            if (this.id === 'player1') window.cyberAudio.announce('Aegis barricade deployed', true);
+        }
+
+        if (window.particleEngine) {
+            for (const n of nodes) {
+                window.particleEngine.spawnAegisDeploy(n.x * 20 + 10, n.y * 20 + 10);
+            }
+            window.particleEngine.addText('🛡️ AEGIS FORCEFIELD! +190', tail.pixelX, tail.pixelY - 24, '#06b6d4', 18);
+        }
+
+        return nodes;
+    }
+
     shootPlasma() {
         if (this.ammo <= 0 || this.ammoCooldown > 0 || !this.isAlive) return null;
         this.ammo--;
@@ -734,6 +775,7 @@ class CyberSnake {
         if (this.sonicWaveCooldown > 0) this.sonicWaveCooldown -= dt;
         if (this.tachyonAfterburnerTimer > 0) this.tachyonAfterburnerTimer -= dt;
         if (this.tachyonAfterburnerCooldown > 0) this.tachyonAfterburnerCooldown -= dt;
+        if (this.barricadeCooldown > 0) this.barricadeCooldown -= dt;
         if (this.chronoAnchor) {
             this.chronoAnchor.life -= dt;
             this.chronoAnchor.pulse = (this.chronoAnchor.pulse + dt * 5) % (Math.PI * 2);

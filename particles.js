@@ -523,6 +523,42 @@ class ParticleEngine {
         }
     }
 
+    spawnAegisDeploy(x, y) {
+        this.shockwaves.push(new Shockwave(x, y, '#06b6d4', 90, 0.4));
+        for (let i = 0; i < 20; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const a = (i * Math.PI * 2) / 20;
+            const spd = Math.random() * 4 + 2;
+            this.particles.push(new Particle(
+                x, y,
+                Math.cos(a) * spd,
+                Math.sin(a) * spd,
+                i % 2 === 0 ? '#06b6d4' : '#67e8f9',
+                Math.random() * 3 + 2,
+                0.45,
+                'spark'
+            ));
+        }
+    }
+
+    spawnBarricadeDeflect(x, y) {
+        this.shockwaves.push(new Shockwave(x, y, '#06b6d4', 60, 0.25));
+        for (let i = 0; i < 14; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const a = Math.random() * Math.PI * 2;
+            const spd = Math.random() * 5 + 3;
+            this.particles.push(new Particle(
+                x, y,
+                Math.cos(a) * spd,
+                Math.sin(a) * spd,
+                '#22d3ee',
+                Math.random() * 2.5 + 1.5,
+                0.3,
+                'spark'
+            ));
+        }
+    }
+
     spawnTachyonIgnition(x, y) {
         this.shockwaves.push(new Shockwave(x, y, '#ef4444', 120, 0.4));
         this.shockwaves.push(new Shockwave(x, y, '#ffedd5', 70, 0.25));
